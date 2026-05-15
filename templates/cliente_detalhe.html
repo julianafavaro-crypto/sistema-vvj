@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+{% block title %}{{ cliente.nome }}{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>{{ cliente.nome }}</h1>
+    <div class="sub-header">
+      <span class="tag">{{ cliente.tipo }}</span>
+      {% if cliente.cpf_cnpj %}<span class="tag">{{ cliente.cpf_cnpj }}</span>{% endif %}
+      {% if cliente.cidade %}<span class="tag">{{ cliente.cidade }}/{{ cliente.estado }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="header-actions">
+    <a href="{{ url_for('abrir_pasta_cliente', id=cliente.id) }}" class="btn btn-ghost">📁 Abrir no Explorer</a>
+    <a href="{{ url_for('cliente_editar', id=cliente.id) }}" class="btn btn-ghost">✏️ Editar</a>
+    <a href="{{ url_for('projeto_novo') }}" class="btn btn-primary">+ Novo Projeto</a>
+  </div>
+</div>
+
+<!-- PASTA COM ABAS -->
+<div class="pasta-container">
+
+  <!-- Abas (divisórias da pasta) -->
+  <div class="pasta-abas">
+    <button class="pasta-aba active" onclick="abrirAba('info', this)">
+      <span>📋</span> Informações
+    </button>
+    <button class="pasta-aba" onclick="abrirAba('docs', this)">
+      <span>📎</span> Documentos
+      {% if documentos %}<span class="aba-badge">{{ documentos|length }}</span>{% endif %}
+    </button>
+    <button class="pasta-aba" onclick="abrirAba('projetos', this)">
+      <span>📂</span> Projetos
+      {% if projetos %}<span class="aba-badge">{{ projetos|length }}</span>{% endif %}
+    </button>
+    <button class="pasta-aba" onclick="abrirAba('financeiro', this)">
+      <span>💰</span> Financeiro
+    </button>
+  </div>
+
+  <!-- Corpo da pasta -->
+  <div class="pasta-corpo">
+
+    <!-- ABA: INFORMAÇÕES -->
+    <div class="pasta-conteudo active" id="aba-info">
+      <div class="info-section">
+        <h3 class="section-titulo">Dados Cadastrais</h3>
+        <div class="info-cards">
+          {% if cliente.cpf_cnpj %}
+          <div class="info-card">
+            <span class="info-card-label">{{ 'CNPJ' if cliente.tipo == 'PJ' else 'CPF' }}</span>
+            <span class="info-card-value">{{ cliente.cpf_cnpj }}</span>
+          </div>
+          {% endif %}
+          {% if cliente.telefone %}
+          <div class="info-card">
+            <span class="info-card-label">WhatsApp</span>
+            <span class="info-card-value">
+              <a href="https://wa.me/55{{ cliente.telefone|replace('(','') |replace(')','') |replace(' ','') |replace('-','') }}" target="_blank" class="wa-link">📱 {{ cliente.telefone }}</a>
+            </span>
+          </div>
+          {% endif %}
+          {% if cliente.email %}
+          <div class="info-card">
+            <span class="info-card-label">E-mail</span>
+            <span class="info-card-value"><a href="mailto:{{ cliente.email }}">{{ cliente.email }}</a></span>
+          </div>
+          {% endif %}
+          {% if cliente.cidade %}
+          <div class="info-card">
+            <span class="info-card-label">Cidade / UF</span>
+            <span class="info-card-value">{{ cliente.cidade }} / {{ cliente.estado }}</span>
+          </div>
+          {% endif %}
+          {% if cliente.endereco %}
+          <div class="info-card wide">
+            <span class="info-card-label">Endereço</span>
+            <span class="info-card-value">{{ cliente.endereco }}</span>
+          </div>
+          {% endif %}
+          <div class="info-card">
+            <span class="info-card-label">Tipo</span>
+            <span class="info-card-value">{{ 'Pessoa Jurídica' if cliente.tipo == 'PJ' else 'Pessoa Física' }}</span>
+          </div>
+          <div class="info-card">
+            <span class="info-card-label">Estado Civil</span>
+            <span class="info-card-value">{{ cliente.estado_civil or '—' }}</span>
+          </div>
+          <div class="info-card">
+            <span class="info-card-label">Prospectante</span>
+            <span class="info-card-value">{{ cliente.prospectante or '—' }}</span>
+          </div>
+          <div class="info-card">
+            <span class="info-card-label">Cadastro</span>
+            <span class="info-card-value">{{ cliente.created_at }}</span>
+          </div>
+        </div>
+
+        {% if cliente.observacoes %}
+        <h3 class="section-titulo" style="margin-top:1.5rem">Observações</h3>
+        <div class="obs-box">{{ cliente.observacoes }}</div>
+        {% endif %}
+
+        <div style="margin-top:1.5rem;display:flex;gap:.75rem">
+          <a href="{{ url_for('cliente_editar', id=cliente.id) }}" class="btn btn-primary">✏️ Editar dados</a>
+          <a href="{{ url_for('abrir_pasta_cliente', id=cliente.id) }}" class="btn btn-ghost">📁 Abrir pasta no Explorer</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA: DOCUMENTOS -->
+    <div class="pasta-conteudo" id="aba-docs">
+
+      <!-- Checklist de documentos necessários -->
+      {% if checklist %}
+      <div class="docs-checklist-panel">
+        <h3 class="section-titulo">📋 Documentos Necessários</h3>
+        <div class="checklist-grupos">
+          {% for grupo, itens in checklist.items() %}
+          <div class="checklist-grupo">
+            <div class="checklist-grupo-titulo">{{ grupo }}</div>
+            {% for item in itens %}
+            <div class="checklist-item {% if item.ok %}checklist-ok{% else %}checklist-pendente{% endif %}">
+              <span class="checklist-icon">{% if item.ok %}✅{% else %}⏳{% endif %}</span>
+              <span class="checklist-doc">{{ item.doc }}</span>
+              {% if not item.ok %}<span class="checklist-badge-pendente">Pendente</span>{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Upload -->
+      <div class="upload-panel">
+        <h3 class="section-titulo">📤 Enviar Documento</h3>
+        <form method="post" action="{{ url_for('documento_upload') }}" enctype="multipart/form-data">
+          <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
+          <div class="upload-form-row">
+            <div class="form-group">
+              <label>Categoria</label>
+              <select name="categoria" class="input">
+                {% for cat in categorias_doc %}
+                <option value="{{ cat }}">{{ cat }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Vincular a Projeto</label>
+              <select name="projeto_id" class="input">
+                <option value="">— Nenhum —</option>
+                {% for p in projetos %}
+                <option value="{{ p.id }}">{{ p.nome[:40] }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Observação</label>
+              <input type="text" name="observacao" class="input" placeholder="Ex: frente e verso, atualizado 2026">
+            </div>
+          </div>
+          <div class="upload-dropzone" id="dropzone">
+            <input type="file" name="arquivo" id="arquivo-input" required
+                   accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.kml,.shp,.dwg,.dxf,.zip,.rar,.txt">
+            <label for="arquivo-input" class="dropzone-label">
+              <div class="dropzone-icon">📂</div>
+              <div class="dropzone-texto" id="dropzone-texto">
+                <strong>Arraste o arquivo aqui</strong> ou clique para selecionar
+              </div>
+              <div class="dropzone-hint">PDF · Word · Excel · Imagem · KML · SHP · DWG · ZIP</div>
+            </label>
+          </div>
+          <button type="submit" class="btn btn-primary" style="margin-top:.75rem">⬆ Enviar</button>
+        </form>
+      </div>
+
+      <!-- Divisórias por categoria -->
+      <div style="margin-top:1.5rem">
+        <div class="docs-tabs-bar">
+          <button class="docs-tab active" onclick="filtrarCat('todos', this)">🗂 Todos ({{ documentos|length }})</button>
+          {% set cats = [] %}
+          {% for doc in documentos %}
+            {% if doc.categoria not in cats %}
+              {% set _ = cats.append(doc.categoria) %}
+              <button class="docs-tab" onclick="filtrarCat('{{ doc.categoria }}', this)">
+                {{ doc.categoria }}
+                <span class="aba-badge">{{ documentos|selectattr('categoria','equalto',doc.categoria)|list|length }}</span>
+              </button>
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        <div class="docs-lista" id="docs-lista">
+          {% if documentos %}
+            {% for doc in documentos %}
+            <div class="doc-row" data-cat="{{ doc.categoria }}">
+              <div class="doc-row-icon">{{ icone_doc(doc.nome_original) }}</div>
+              <div class="doc-row-info">
+                <div class="doc-row-nome">{{ doc.nome_original }}</div>
+                <div class="doc-row-meta">
+                  <span class="tag tag-sm">{{ doc.categoria }}</span>
+                  {% if doc.observacao %}<span class="doc-obs-inline">{{ doc.observacao }}</span>{% endif %}
+                  <span class="doc-data">{{ doc.data_upload }}</span>
+                  {% if doc.tamanho %}<span class="doc-size">{{ (doc.tamanho/1024)|int }}KB</span>{% endif %}
+                </div>
+              </div>
+              <div class="doc-row-acoes">
+                <a href="{{ url_for('documento_abrir', id=doc.id) }}" target="_blank" class="btn btn-ghost btn-sm" title="Visualizar">👁 Ver</a>
+                <a href="{{ url_for('documento_download', id=doc.id) }}" class="btn btn-ghost btn-sm" title="Baixar">⬇ Baixar</a>
+                <form method="post" action="{{ url_for('documento_excluir', id=doc.id) }}" style="display:inline"
+                      onsubmit="return confirmar('Excluir {{ doc.nome_original }}?')">
+                  <button class="btn btn-danger btn-sm">✕</button>
+                </form>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+          <div class="empty-state" style="padding:3rem">
+            <div style="font-size:3rem">📂</div>
+            <p>Nenhum documento enviado ainda.</p>
+            <p style="font-size:.82rem;color:#aaa">Use o formulário acima para enviar CNH, matrícula, CCIR e outros.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA: PROJETOS -->
+    <div class="pasta-conteudo" id="aba-projetos">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <h3 class="section-titulo" style="margin:0">Projetos do Cliente</h3>
+        <a href="{{ url_for('projeto_novo') }}" class="btn btn-primary btn-sm">+ Novo Projeto</a>
+      </div>
+      {% if projetos %}
+      <div class="projetos-lista">
+        {% for p in projetos %}
+        <a href="{{ url_for('projeto_detalhe', id=p.id) }}" class="projeto-card-cliente">
+          <div class="pcc-esquerda">
+            <div class="pcc-nome">{{ p.nome }}</div>
+            <div class="pcc-meta">
+              <span class="tag tag-sm">{{ p.tipo_servico }}</span>
+              {% if p.orgao %}<span class="doc-obs-inline">{{ p.orgao[:40] }}</span>{% endif %}
+            </div>
+          </div>
+          <div class="pcc-direita">
+            <span class="fase-badge fase-{{ fases.index(p.fase)+1 if p.fase in fases else 1 }}">{{ p.fase }}</span>
+            <span class="status-badge status-{{ p.status|replace(' ','') }}">{{ p.status }}</span>
+            {% if p.data_previsao %}
+            <span class="doc-data {% if p.data_previsao < hoje %}valor-red{% endif %}">📅 {{ p.data_previsao }}</span>
+            {% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <p>Nenhum projeto para este cliente.</p>
+        <a href="{{ url_for('projeto_novo') }}" class="btn btn-primary">Criar primeiro projeto</a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- ABA: FINANCEIRO -->
+    <div class="pasta-conteudo" id="aba-financeiro">
+      {% set pagamentos = [] %}
+      {% for p in projetos %}
+        {% for pg in namespace_pags.get(p.id, []) %}
+          {% set _ = pagamentos.append(pg) %}
+        {% endfor %}
+      {% endfor %}
+
+      <h3 class="section-titulo">Resumo por Projeto</h3>
+      {% if projetos %}
+      <table class="table">
+        <thead>
+          <tr><th>Projeto</th><th>Fase</th><th>Valor Total</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+        {% for p in projetos %}
+        <tr>
+          <td><a href="{{ url_for('projeto_detalhe', id=p.id) }}">{{ p.nome }}</a></td>
+          <td><span class="fase-badge fase-{{ fases.index(p.fase)+1 if p.fase in fases else 1 }}">{{ p.fase }}</span></td>
+          <td>{% if p.valor_total and p.valor_total > 0 %}R$ {{ "%.2f"|format(p.valor_total) }}{% else %}<span style="color:#aaa">—</span>{% endif %}</td>
+          <td><span class="status-badge status-{{ p.status|replace(' ','') }}">{{ p.status }}</span></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <div style="margin-top:1rem;text-align:right">
+        <a href="{{ url_for('financeiro') }}" class="btn btn-ghost btn-sm">Ver financeiro completo →</a>
+      </div>
+      {% else %}
+      <div class="empty-state">Nenhum projeto financeiro encontrado.</div>
+      {% endif %}
+    </div>
+
+  </div><!-- fim pasta-corpo -->
+</div><!-- fim pasta-container -->
+
+<script>
+function abrirAba(id, btn) {
+  document.querySelectorAll('.pasta-conteudo').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.pasta-aba').forEach(b => b.classList.remove('active'));
+  document.getElementById('aba-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function filtrarCat(cat, btn) {
+  document.querySelectorAll('.docs-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.doc-row').forEach(row => {
+    row.style.display = (cat === 'todos' || row.dataset.cat === cat) ? '' : 'none';
+  });
+}
+
+// Drag and drop
+const dz = document.getElementById('dropzone');
+if (dz) {
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dz-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('dz-over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('dz-over');
+    const f = e.dataTransfer.files[0];
+    if (f) {
+      document.getElementById('arquivo-input').files = e.dataTransfer.files;
+      document.getElementById('dropzone-texto').innerHTML = '<strong>' + f.name + '</strong>';
+    }
+  });
+  document.getElementById('arquivo-input').addEventListener('change', function() {
+    if (this.files[0]) document.getElementById('dropzone-texto').innerHTML = '<strong>' + this.files[0].name + '</strong>';
+  });
+}
+
+// Abrir aba por hash na URL
+const hash = window.location.hash;
+if (hash === '#docs') abrirAba('docs', document.querySelectorAll('.pasta-aba')[1]);
+if (hash === '#projetos') abrirAba('projetos', document.querySelectorAll('.pasta-aba')[2]);
+if (hash === '#financeiro') abrirAba('financeiro', document.querySelectorAll('.pasta-aba')[3]);
+</script>
+{% endblock %}

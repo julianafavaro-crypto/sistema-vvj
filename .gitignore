@@ -1,0 +1,13 @@
+*.db
+*.sqlite
+__pycache__/
+*.pyc
+.env
+*.env
+venv/
+.venv/
+*.log
+gestao.db
+importar_*.py
+criar_usuarios.py
+add_prospectante.py

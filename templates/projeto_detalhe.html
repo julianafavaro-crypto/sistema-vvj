@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}{{ projeto.nome }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ projeto.nome }}</h1>
+    <div class="sub-header">
+      <span class="fase-badge fase-{{ fases.index(projeto.fase)+1 if projeto.fase in fases else 1 }}">{{ projeto.fase }}</span>
+      <span class="status-badge status-{{ projeto.status|replace(' ','') }}">{{ projeto.status }}</span>
+      {% if projeto.tipo_servico %}<span class="tag">{{ projeto.tipo_servico }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="header-actions">
+    <a href="{{ url_for('projeto_editar', id=projeto.id) }}" class="btn btn-ghost">✏️ Editar</a>
+    {% if projeto.fase != 'Faturamento' and not projeto.arquivado %}
+    <form method="post" action="{{ url_for('avancar_fase', id=projeto.id) }}" style="display:inline">
+      <button class="btn btn-primary">▶ Avançar Fase</button>
+    </form>
+    {% endif %}
+    <form method="post" action="{{ url_for('projeto_arquivar', id=projeto.id) }}" style="display:inline"
+          onsubmit="return confirmar('{% if projeto.arquivado %}Reativar este projeto?{% else %}Arquivar este projeto?{% endif %}')">
+      <button class="btn btn-ghost" style="color:{% if projeto.arquivado %}var(--green){% else %}#6b7280{% endif %}">
+        {% if projeto.arquivado %}↩ Reativar{% else %}🗄 Arquivar{% endif %}
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Progresso -->
+<div class="progress-bar-wrap">
+  <div class="progress-bar-label">
+    <span>Progresso do checklist: {{ tarefas_ok }}/{{ tarefas_total }} tarefas</span>
+    <span>{{ progresso }}%</span>
+  </div>
+  <div class="progress-bar-bg">
+    <div class="progress-bar-fill" style="width:{{ progresso }}%"></div>
+  </div>
+</div>
+
+<div class="three-col">
+  <!-- Coluna 1: Info + Checklist -->
+  <div class="col-span-2">
+    <!-- Info do projeto -->
+    <div class="panel">
+      <div class="panel-header"><h2>Informações</h2></div>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Cliente</span>
+          <span class="info-value">
+            {{ projeto.cliente_nome or '—' }}
+            {% if projeto.cliente_tel %}
+            <a href="https://wa.me/55{{ projeto.cliente_tel|replace('(','') |replace(')','') |replace(' ','') |replace('-','') }}" target="_blank" class="wa-link">📱 WhatsApp</a>
+            {% endif %}
+          </span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Órgão</span>
+          <span class="info-value">{{ projeto.orgao or '—' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Nº Processo</span>
+          <span class="info-value">{{ projeto.numero_processo or '—' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Área</span>
+          <span class="info-value">{{ projeto.area or '—' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Responsável</span>
+          <span class="info-value">{{ projeto.responsavel or '—' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Início</span>
+          <span class="info-value">{{ projeto.data_inicio or '—' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Previsão</span>
+          <span class="info-value {% if projeto.data_previsao and projeto.data_previsao < hoje %}valor-red{% endif %}">
+            {{ projeto.data_previsao or '—' }}
+          </span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Valor Total</span>
+          <span class="info-value">{% if projeto.valor_total %}R$ {{ "%.2f"|format(projeto.valor_total) }}{% else %}—{% endif %}</span>
+        </div>
+      </div>
+      {% if projeto.descricao %}
+      <div class="info-desc">{{ projeto.descricao }}</div>
+      {% endif %}
+    </div>
+
+    <!-- Checklist -->
+    <div class="panel mt">
+      <div class="panel-header">
+        <h2>✅ Checklist de Tarefas</h2>
+      </div>
+      {% if tarefas %}
+      <div class="checklist">
+        {% for t in tarefas %}
+        <form method="post" action="{{ url_for('tarefa_toggle', id=t.id) }}" class="checklist-item {% if t.concluida %}done{% endif %}">
+          <button type="submit" class="check-btn">
+            <span class="check-box">{% if t.concluida %}✓{% endif %}</span>
+          </button>
+          <span class="check-label">{{ t.descricao }}</span>
+          {% if t.data_conclusao %}<span class="check-date">{{ t.data_conclusao }}</span>{% endif %}
+        </form>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <form method="post" action="{{ url_for('tarefa_nova') }}" class="add-task-form">
+        <input type="hidden" name="projeto_id" value="{{ projeto.id }}">
+        <input type="text" name="descricao" placeholder="+ Adicionar tarefa..." class="input input-inline" required>
+        <button class="btn btn-ghost btn-sm">Adicionar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Coluna 2: Financeiro + Histórico -->
+  <div>
+    <!-- Financeiro -->
+    <div class="panel">
+      <div class="panel-header"><h2>💰 Financeiro</h2></div>
+      <div class="fin-summary">
+        <div class="fin-item">
+          <span class="fin-label">Recebido</span>
+          <span class="fin-value green">R$ {{ "%.2f"|format(total_pago) }}</span>
+        </div>
+        <div class="fin-item">
+          <span class="fin-label">Pendente</span>
+          <span class="fin-value orange">R$ {{ "%.2f"|format(total_pendente) }}</span>
+        </div>
+      </div>
+      {% if pagamentos %}
+      <div class="pagamentos-list">
+        {% for p in pagamentos %}
+        <div class="pagamento-item {% if p.status=='Pago' %}pago{% elif p.data_vencimento and p.data_vencimento < hoje %}atrasado{% endif %}">
+          <div class="pag-info">
+            <span class="pag-desc">{{ p.descricao }}</span>
+            <span class="pag-valor">R$ {{ "%.2f"|format(p.valor) }}</span>
+          </div>
+          <div class="pag-meta">
+            <span>{{ p.forma }}</span>
+            {% if p.status == 'Pago' %}
+              <span class="badge-pago">✓ Pago {{ p.data_pagamento }}</span>
+            {% else %}
+              <span class="badge-pendente">Vcto {{ p.data_vencimento or '—' }}</span>
+              <form method="post" action="{{ url_for('pagamento_pagar', id=p.id) }}" style="display:inline">
+                <button class="btn btn-success btn-xs">Receber</button>
+              </form>
+              <form method="post" action="{{ url_for('pagamento_excluir', id=p.id) }}" style="display:inline"
+                    onsubmit="return confirmar('Excluir este pagamento?')">
+                <button class="btn btn-danger btn-xs">✕</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <form method="post" action="{{ url_for('pagamento_novo') }}" class="add-pag-form">
+        <input type="hidden" name="projeto_id" value="{{ projeto.id }}">
+        <input type="text" name="descricao" placeholder="Descrição" class="input input-sm" required>
+        <input type="number" name="valor" placeholder="Valor" class="input input-sm" step="0.01" min="0" required>
+        <input type="date" name="data_vencimento" class="input input-sm" value="{{ hoje }}">
+        <select name="forma" class="input input-sm">
+          <option>Pix</option><option>Boleto</option><option>Transferência</option><option>Dinheiro</option><option>Cheque</option>
+        </select>
+        <button class="btn btn-primary btn-sm">+ Cobrança</button>
+      </form>
+    </div>
+
+    <!-- Histórico -->
+    <div class="panel mt">
+      <div class="panel-header"><h2>📋 Histórico</h2></div>
+      <div class="historico-list">
+        {% for h in historico %}
+        <div class="hist-item">
+          <span class="hist-data">{{ h.data }}</span>
+          <span class="hist-desc">{{ h.descricao }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <form method="post" action="{{ url_for('historico_novo') }}" class="add-task-form">
+        <input type="hidden" name="projeto_id" value="{{ projeto.id }}">
+        <input type="text" name="descricao" placeholder="Registrar atualização..." class="input input-inline" required>
+        <button class="btn btn-ghost btn-sm">Registrar</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

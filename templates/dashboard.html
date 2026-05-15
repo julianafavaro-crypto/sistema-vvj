@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Sistema VVJ — Dashboard{% endblock %}
+{% block content %}
+<!-- Hero Banner -->
+<div class="hero-banner">
+  <div class="hero-text">
+    <h2>Controle as informações das três empresas em um único ambiente.</h2>
+    <p>Acompanhe indicadores, projetos, documentos e financeiro de VKS · VALSS · JF Florestal com uma experiência simples e integrada.</p>
+  </div>
+  <div class="hero-chips">
+    <div class="hero-chip active">VKS</div>
+    <div class="hero-chip">VALSS</div>
+    <div class="hero-chip">JF Florestal</div>
+  </div>
+</div>
+
+<div class="page-header">
+  <h1>Visão Geral</h1>
+  <span class="date-badge">{{ hoje }}</span>
+</div>
+
+<div class="cards-grid">
+  <div class="card card-green">
+    <div class="card-icon">📂</div>
+    <div class="card-info">
+      <div class="card-value">{{ projetos|length }}</div>
+      <div class="card-label">Projetos Ativos</div>
+    </div>
+  </div>
+  <div class="card card-blue">
+    <div class="card-icon">👥</div>
+    <div class="card-info">
+      <div class="card-value">{{ total_clientes }}</div>
+      <div class="card-label">Clientes</div>
+    </div>
+  </div>
+  <div class="card card-emerald">
+    <div class="card-icon">✅</div>
+    <div class="card-info">
+      <div class="card-value">R$ {{ "%.0f"|format(total_recebido) }}</div>
+      <div class="card-label">Recebido</div>
+    </div>
+  </div>
+  <div class="card card-orange">
+    <div class="card-icon">⏳</div>
+    <div class="card-info">
+      <div class="card-value">R$ {{ "%.0f"|format(total_a_receber) }}</div>
+      <div class="card-label">A Receber</div>
+    </div>
+  </div>
+  {% if total_atrasado > 0 %}
+  <div class="card card-red">
+    <div class="card-icon">🚨</div>
+    <div class="card-info">
+      <div class="card-value">R$ {{ "%.0f"|format(total_atrasado) }}</div>
+      <div class="card-label">Atrasado</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="two-col">
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Projetos por Fase</h2>
+      <a href="{{ url_for('projeto_novo') }}" class="btn btn-primary btn-sm">+ Novo Projeto</a>
+    </div>
+    <div class="fases-grid">
+      {% for fase in fases %}
+      <a href="{{ url_for('projetos', fase=fase) }}" class="fase-card fase-{{ loop.index }}">
+        <div class="fase-num">{{ por_fase.get(fase, 0) }}</div>
+        <div class="fase-nome">{{ fase }}</div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header"><h2>Alertas de Prazo</h2></div>
+    {% if alertas %}
+      {% for a in alertas %}
+      <a href="{{ url_for('projeto_detalhe', id=a.id) }}" class="alerta-item">
+        <div class="alerta-nome">{{ a.nome }}</div>
+        <div class="alerta-sub">{{ a.cliente_nome }} · {{ a.fase }}</div>
+        <div class="alerta-data {% if a.data_previsao < hoje %}alerta-atrasado{% endif %}">
+          📅 {{ a.data_previsao }}
+        </div>
+      </a>
+      {% endfor %}
+    {% else %}
+      <p class="empty-state">Nenhum prazo nos próximos 7 dias.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if pagamentos_atrasados %}
+<div class="panel mt">
+  <div class="panel-header">
+    <h2>🚨 Pagamentos Atrasados</h2>
+  </div>
+  <table class="table">
+    <thead><tr><th>Projeto</th><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Ação</th></tr></thead>
+    <tbody>
+    {% for p in pagamentos_atrasados %}
+    <tr>
+      <td><a href="{{ url_for('projeto_detalhe', id=p.projeto_id) }}">{{ p.projeto_nome }}</a></td>
+      <td>{{ p.descricao }}</td>
+      <td class="valor-red">R$ {{ "%.2f"|format(p.valor) }}</td>
+      <td class="valor-red">{{ p.data_vencimento }}</td>
+      <td>
+        <form method="post" action="{{ url_for('pagamento_pagar', id=p.id) }}" style="display:inline">
+          <button class="btn btn-success btn-xs">Marcar Pago</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="panel mt">
+  <div class="panel-header">
+    <h2>Projetos Recentes</h2>
+    <a href="{{ url_for('projetos') }}" class="btn btn-ghost btn-sm">Ver todos</a>
+  </div>
+  <table class="table">
+    <thead><tr><th>Projeto</th><th>Cliente</th><th>Serviço</th><th>Fase</th><th>Status</th><th>Prazo</th></tr></thead>
+    <tbody>
+    {% for p in projetos[:10] %}
+    <tr>
+      <td><a href="{{ url_for('projeto_detalhe', id=p.id) }}">{{ p.nome }}</a></td>
+      <td>{{ p.cliente_nome or '—' }}</td>
+      <td><span class="tag">{{ p.tipo_servico }}</span></td>
+      <td><span class="fase-badge fase-{{ fases.index(p.fase)+1 if p.fase in fases else 1 }}">{{ p.fase }}</span></td>
+      <td><span class="status-badge status-{{ p.status|replace(' ','') }}">{{ p.status }}</span></td>
+      <td class="{% if p.data_previsao and p.data_previsao < hoje and p.fase != 'Faturamento' %}valor-red{% endif %}">
+        {{ p.data_previsao or '—' }}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

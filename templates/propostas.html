@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Gerador de Propostas{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>📋 Gerador de Propostas</h1>
+</div>
+
+<div class="two-col">
+  <div class="panel form-panel">
+    <h2 style="margin-bottom:1rem">Preencher Proposta</h2>
+    <form id="proposta-form">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Cliente</label>
+          <select id="sel-cliente" class="input" onchange="preencherCliente()">
+            <option value="">— Selecionar cliente cadastrado —</option>
+            {% for c in clientes %}
+            <option value="{{ c.id }}"
+              data-nome="{{ c.nome }}"
+              data-cpfcnpj="{{ c.cpf_cnpj or '' }}"
+              data-cidade="{{ c.cidade or '' }}"
+              data-estado="{{ c.estado or 'PR' }}"
+              data-tel="{{ c.telefone or '' }}">{{ c.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Nome do Cliente (ou digitar)</label>
+          <input type="text" id="p-cliente" class="input" placeholder="Nome completo / Razão Social">
+        </div>
+        <div class="form-group">
+          <label>CPF / CNPJ</label>
+          <input type="text" id="p-cpfcnpj" class="input">
+        </div>
+        <div class="form-group">
+          <label>Cidade / UF</label>
+          <input type="text" id="p-cidade" class="input" placeholder="Campo Largo/PR">
+        </div>
+        <div class="form-group full">
+          <label>Tipo de Serviço</label>
+          <select id="p-servico" class="input" onchange="atualizarChecklist()">
+            {% for t in checklists.keys() %}
+            <option value="{{ t }}">{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Descrição do Imóvel / Objeto</label>
+          <input type="text" id="p-imovel" class="input" placeholder="Ex: Sítio Rural, 25,4 ha, Campo Largo/PR, Matrícula 12345">
+        </div>
+        <div class="form-group">
+          <label>Valor Total (R$)</label>
+          <input type="number" id="p-valor" class="input" step="0.01" min="0" placeholder="0,00">
+        </div>
+        <div class="form-group">
+          <label>Forma de Pagamento</label>
+          <input type="text" id="p-pagamento" class="input" value="50% na assinatura + 50% na entrega">
+        </div>
+        <div class="form-group">
+          <label>Prazo de Execução</label>
+          <input type="text" id="p-prazo" class="input" placeholder="Ex: 30 a 60 dias úteis">
+        </div>
+        <div class="form-group">
+          <label>Validade da Proposta</label>
+          <input type="text" id="p-validade" class="input" value="15 dias">
+        </div>
+        <div class="form-group full">
+          <label>Observações adicionais</label>
+          <textarea id="p-obs" class="input textarea" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" onclick="gerarProposta()" class="btn btn-primary">📄 Gerar Proposta</button>
+        <button type="button" onclick="imprimirProposta()" class="btn btn-ghost">🖨️ Imprimir</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="panel" id="proposta-preview">
+    <div id="proposta-output" style="font-family:Arial,sans-serif;line-height:1.6;color:#1a1a1a">
+      <div style="text-align:center;padding:2rem 0;color:#999">
+        <div style="font-size:3rem">📋</div>
+        <p>Preencha os dados ao lado e clique em "Gerar Proposta"</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const checklists = {{ checklists|tojson }};
+
+function preencherCliente() {
+  const sel = document.getElementById('sel-cliente');
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt.value) return;
+  document.getElementById('p-cliente').value = opt.dataset.nome || '';
+  document.getElementById('p-cpfcnpj').value = opt.dataset.cpfcnpj || '';
+  document.getElementById('p-cidade').value = (opt.dataset.cidade && opt.dataset.estado) ? opt.dataset.cidade+'/'+opt.dataset.estado : '';
+}
+
+function atualizarChecklist() {}
+
+function fmt(v) {
+  return parseFloat(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+}
+
+function gerarProposta() {
+  const cliente = document.getElementById('p-cliente').value || '_______________';
+  const cpfcnpj = document.getElementById('p-cpfcnpj').value;
+  const cidade = document.getElementById('p-cidade').value || 'Campo Largo/PR';
+  const servico = document.getElementById('p-servico').value;
+  const imovel = document.getElementById('p-imovel').value || '_______________';
+  const valor = document.getElementById('p-valor').value;
+  const pagamento = document.getElementById('p-pagamento').value;
+  const prazo = document.getElementById('p-prazo').value || 'A definir';
+  const validade = document.getElementById('p-validade').value;
+  const obs = document.getElementById('p-obs').value;
+  const checklist = checklists[servico] || [];
+  const dataHoje = new Date().toLocaleDateString('pt-BR');
+
+  const itens = checklist.map(i => `<li style="margin:4px 0">${i}</li>`).join('');
+
+  const html = `
+    <div style="border-bottom:3px solid #2d6a4f;padding-bottom:1rem;margin-bottom:1.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:1.4rem;font-weight:700;color:#2d6a4f">JF Florestal</div>
+          <div style="color:#555;font-size:.85rem">Engenharia Florestal & Regularização Ambiental</div>
+          <div style="color:#555;font-size:.8rem">CREA-PR 147532/D | Juliana M. Favaro</div>
+        </div>
+        <div style="text-align:right;font-size:.85rem;color:#666">
+          <div>Campo Largo, ${dataHoje}</div>
+          <div>julianafavaro@jfflorestal.com.br</div>
+          <div>(42) 99838-4272</div>
+        </div>
+      </div>
+    </div>
+
+    <h2 style="text-align:center;color:#2d6a4f;margin:1rem 0">PROPOSTA TÉCNICA E COMERCIAL</h2>
+    <h3 style="text-align:center;color:#555;font-weight:normal;margin-bottom:1.5rem">${servico}</h3>
+
+    <div style="background:#f0f7f4;padding:1rem;border-radius:6px;margin-bottom:1.5rem">
+      <strong>DADOS DO CLIENTE</strong><br>
+      <b>Nome:</b> ${cliente}${cpfcnpj ? '<br><b>CPF/CNPJ:</b> '+cpfcnpj : ''}<br>
+      <b>Cidade:</b> ${cidade}
+    </div>
+
+    <p><strong>Objeto:</strong> ${imovel}</p>
+
+    <div style="margin:1.5rem 0">
+      <strong>ESCOPO DOS SERVIÇOS</strong>
+      <ul style="margin-top:.5rem;padding-left:1.5rem">${itens}</ul>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.5rem 0">
+      <div style="background:#f9f9f9;padding:1rem;border-radius:6px">
+        <strong>INVESTIMENTO</strong><br>
+        <span style="font-size:1.3rem;color:#2d6a4f;font-weight:700">${valor ? fmt(valor) : 'A consultar'}</span><br>
+        <small>${pagamento}</small>
+      </div>
+      <div style="background:#f9f9f9;padding:1rem;border-radius:6px">
+        <strong>PRAZO</strong><br>
+        ${prazo}<br><br>
+        <strong>VALIDADE</strong><br>
+        ${validade}
+      </div>
+    </div>
+
+    ${obs ? `<div style="background:#fffbea;padding:1rem;border-radius:6px;margin-bottom:1rem;border-left:3px solid #f59e0b"><strong>Observações:</strong><br>${obs}</div>` : ''}
+
+    <div style="margin-top:2rem;font-size:.85rem;color:#666;border-top:1px solid #eee;padding-top:1rem">
+      <p>Em caso de dúvidas ou para aprovação desta proposta, entre em contato pelo WhatsApp: <strong>(42) 99838-4272</strong></p>
+      <p>Atenciosamente,<br><strong>Juliana M. Favaro</strong><br>Engenheira Florestal — CREA-PR 147532/D<br>JF Florestal</p>
+    </div>
+  `;
+  document.getElementById('proposta-output').innerHTML = html;
+}
+
+function imprimirProposta() {
+  const conteudo = document.getElementById('proposta-output').innerHTML;
+  const w = window.open('','_blank');
+  w.document.write(`<html><head><title>Proposta</title><style>body{font-family:Arial,sans-serif;padding:2rem;max-width:800px;margin:auto}@media print{body{padding:0}}</style></head><body>${conteudo}</body></html>`);
+  w.document.close();
+  w.print();
+}
+</script>
+{% endblock %}

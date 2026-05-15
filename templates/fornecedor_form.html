@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{{ titulo }}</h1>
+  <a href="{{ url_for('fornecedores') }}" class="btn btn-ghost">← Voltar</a>
+</div>
+
+<div class="panel form-panel">
+  <form method="post">
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Nome / Razão Social *</label>
+        <input type="text" name="nome" value="{{ fornecedor.nome if fornecedor else '' }}" required class="input">
+      </div>
+      <div class="form-group">
+        <label>Tipo</label>
+        <select name="tipo" class="input">
+          <option value="PJ" {% if not fornecedor or fornecedor.tipo=='PJ' %}selected{% endif %}>Pessoa Jurídica</option>
+          <option value="PF" {% if fornecedor and fornecedor.tipo=='PF' %}selected{% endif %}>Pessoa Física</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>CPF / CNPJ</label>
+        <input type="text" name="cpf_cnpj" value="{{ fornecedor.cpf_cnpj if fornecedor else '' }}" class="input">
+      </div>
+      <div class="form-group">
+        <label>Categoria</label>
+        <select name="categoria" class="input">
+          <option value="">— Selecione —</option>
+          {% for cat in categorias %}
+          <option value="{{ cat }}" {% if fornecedor and fornecedor.categoria == cat %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Nome do Contato / Responsável</label>
+        <input type="text" name="contato" value="{{ fornecedor.contato if fornecedor else '' }}" class="input">
+      </div>
+      <div class="form-group">
+        <label>WhatsApp / Telefone</label>
+        <input type="text" name="telefone" value="{{ fornecedor.telefone if fornecedor else '' }}" class="input" placeholder="(42) 99999-9999">
+      </div>
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" name="email" value="{{ fornecedor.email if fornecedor else '' }}" class="input">
+      </div>
+      <div class="form-group">
+        <label>Cidade</label>
+        <input type="text" name="cidade" value="{{ fornecedor.cidade if fornecedor else '' }}" class="input">
+      </div>
+      <div class="form-group">
+        <label>Estado</label>
+        <select name="estado" class="input">
+          {% for uf in ['PR','SC','SP','RS','MG','RJ','GO','MT','MS','BA','PA','AM','ES','DF'] %}
+          <option value="{{ uf }}" {% if fornecedor and fornecedor.estado==uf %}selected{% elif not fornecedor and uf=='PR' %}selected{% endif %}>{{ uf }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Observações</label>
+        <textarea name="observacoes" class="input textarea" rows="3">{{ fornecedor.observacoes if fornecedor else '' }}</textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">💾 Salvar Fornecedor</button>
+      <a href="{{ url_for('fornecedores') }}" class="btn btn-ghost">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

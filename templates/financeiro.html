@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Financeiro{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>💰 Financeiro</h1>
+  <form method="get" style="display:flex;gap:.5rem;align-items:center">
+    <input type="month" name="mes" value="{{ mes }}" class="input input-sm">
+    <button class="btn btn-primary btn-sm">Filtrar</button>
+  </form>
+</div>
+
+<div class="cards-grid">
+  <div class="card card-emerald">
+    <div class="card-icon">✅</div>
+    <div class="card-info">
+      <div class="card-value">R$ {{ "%.2f"|format(total_pago) }}</div>
+      <div class="card-label">Recebido em {{ mes }}</div>
+    </div>
+  </div>
+  <div class="card card-orange">
+    <div class="card-icon">⏳</div>
+    <div class="card-info">
+      <div class="card-value">R$ {{ "%.2f"|format(total_pendente) }}</div>
+      <div class="card-label">A Receber</div>
+    </div>
+  </div>
+  <div class="card card-red">
+    <div class="card-icon">🚨</div>
+    <div class="card-info">
+      <div class="card-value">R$ {{ "%.2f"|format(total_atrasado) }}</div>
+      <div class="card-label">Atrasado</div>
+    </div>
+  </div>
+</div>
+
+<div class="panel mt">
+  <div class="panel-header"><h2>Movimentações — {{ mes }}</h2></div>
+  {% if pagamentos %}
+  <table class="table">
+    <thead>
+      <tr><th>Projeto</th><th>Cliente</th><th>Descrição</th><th>Valor</th><th>Forma</th><th>Vencimento</th><th>Status</th><th>Ação</th></tr>
+    </thead>
+    <tbody>
+    {% for p in pagamentos %}
+    <tr class="{% if p.status=='Pago' %}row-pago{% elif p.data_vencimento and p.data_vencimento < hoje %}row-atrasado{% endif %}">
+      <td><a href="{{ url_for('projeto_detalhe', id=p.projeto_id) }}">{{ p.projeto_nome }}</a></td>
+      <td>{{ p.cliente_nome or '—' }}</td>
+      <td>{{ p.descricao }}</td>
+      <td><strong>R$ {{ "%.2f"|format(p.valor) }}</strong></td>
+      <td>{{ p.forma }}</td>
+      <td>{{ p.data_vencimento or '—' }}</td>
+      <td>
+        {% if p.status == 'Pago' %}
+          <span class="badge-pago">✓ Pago</span>
+        {% elif p.data_vencimento and p.data_vencimento < hoje %}
+          <span class="badge-atrasado">Atrasado</span>
+        {% else %}
+          <span class="badge-pendente">Pendente</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if p.status != 'Pago' %}
+        <form method="post" action="{{ url_for('pagamento_pagar', id=p.id) }}" style="display:inline">
+          <button class="btn btn-success btn-xs">Receber</button>
+        </form>
+        {% else %}
+          <span style="color:#999;font-size:.8rem">{{ p.data_pagamento }}</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">Nenhuma movimentação em {{ mes }}.</div>
+  {% endif %}
+</div>
+
+<div class="panel mt">
+  <div class="panel-header"><h2>Todos os Pagamentos Pendentes</h2></div>
+  <table class="table">
+    <thead>
+      <tr><th>Projeto</th><th>Cliente</th><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Ação</th></tr>
+    </thead>
+    <tbody>
+    {% for p in todos if p.status == 'Pendente' %}
+    <tr class="{% if p.data_vencimento and p.data_vencimento < hoje %}row-atrasado{% endif %}">
+      <td><a href="{{ url_for('projeto_detalhe', id=p.projeto_id) }}">{{ p.projeto_nome }}</a></td>
+      <td>{{ p.cliente_nome or '—' }}</td>
+      <td>{{ p.descricao }}</td>
+      <td><strong>R$ {{ "%.2f"|format(p.valor) }}</strong></td>
+      <td class="{% if p.data_vencimento and p.data_vencimento < hoje %}valor-red{% endif %}">{{ p.data_vencimento or '—' }}</td>
+      <td>
+        <form method="post" action="{{ url_for('pagamento_pagar', id=p.id) }}" style="display:inline">
+          <button class="btn btn-success btn-xs">Receber</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" class="empty-state">Nenhum pagamento pendente.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

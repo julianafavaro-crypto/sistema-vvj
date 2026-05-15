@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Clientes{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Clientes</h1>
+  <a href="{{ url_for('cliente_novo') }}" class="btn btn-primary">+ Novo Cliente</a>
+</div>
+
+<form method="get" class="search-bar">
+  <input type="text" name="busca" placeholder="Buscar por nome, CPF/CNPJ ou cidade..." value="{{ busca }}" class="input-search">
+  <button class="btn btn-primary">Buscar</button>
+  {% if busca %}<a href="{{ url_for('clientes') }}" class="btn btn-ghost">Limpar</a>{% endif %}
+</form>
+
+<div class="panel">
+  {% if clientes %}
+  <table class="table">
+    <thead>
+      <tr><th>Nome</th><th>Tipo</th><th>CPF/CNPJ</th><th>Telefone</th><th>Cidade/UF</th><th>Prospectante</th><th>Ações</th></tr>
+    </thead>
+    <tbody>
+    {% for c in clientes %}
+    <tr>
+      <td><a href="{{ url_for('cliente_detalhe', id=c.id) }}" style="color:var(--green);font-weight:700;text-decoration:none">{{ c.nome }}</a></td>
+      <td><span class="tag">{{ c.tipo }}</span></td>
+      <td>{{ c.cpf_cnpj or '—' }}</td>
+      <td>{% if c.telefone %}<a href="https://wa.me/55{{ c.telefone|replace('(','') |replace(')','') |replace(' ','') |replace('-','') }}" target="_blank">📱 {{ c.telefone }}</a>{% else %}—{% endif %}</td>
+      <td>{{ c.cidade or '—' }}{% if c.cidade and c.estado %}/{{ c.estado }}{% endif %}</td>
+      <td>{% if c.prospectante %}<span class="tag tag-prospectante">{{ c.prospectante }}</span>{% else %}—{% endif %}</td>
+      <td class="actions">
+        <a href="{{ url_for('cliente_editar', id=c.id) }}" class="btn btn-ghost btn-xs">Editar</a>
+        <a href="{{ url_for('projetos') }}?busca={{ c.nome }}" class="btn btn-ghost btn-xs">Projetos</a>
+        <form method="post" action="{{ url_for('cliente_excluir', id=c.id) }}" style="display:inline"
+              onsubmit="return confirmar('Excluir cliente {{ c.nome }}?')">
+          <button class="btn btn-danger btn-xs">Excluir</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <p>Nenhum cliente encontrado.</p>
+    <a href="{{ url_for('cliente_novo') }}" class="btn btn-primary">Cadastrar primeiro cliente</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

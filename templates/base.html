@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Sistema VVJ{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<nav class="sidebar">
+
+  <!-- Logo -->
+  <div class="brand">
+    <div class="brand-monogram">VVJ</div>
+    <div class="brand-text">
+      <div class="brand-name">Plataforma Integrada</div>
+      <div class="brand-sub">VKS · VALSS · JF Florestal</div>
+    </div>
+  </div>
+
+  <!-- Navegação -->
+  <ul class="nav-links">
+    <li><a href="{{ url_for('dashboard') }}" class="{% if request.endpoint=='dashboard' %}active{% endif %}">
+      <span class="nav-icon">📊</span> Dashboard
+    </a></li>
+    <li><a href="{{ url_for('clientes') }}" class="{% if 'cliente' in request.endpoint %}active{% endif %}">
+      <span class="nav-icon">👥</span> Clientes
+    </a></li>
+    <li><a href="{{ url_for('projetos') }}" class="{% if 'projeto' in request.endpoint or request.endpoint=='avancar_fase' %}active{% endif %}">
+      <span class="nav-icon">📂</span> Projetos
+    </a></li>
+
+    {% if eh_proprietario %}
+    <li><a href="{{ url_for('propostas') }}" class="{% if request.endpoint=='propostas' %}active{% endif %}">
+      <span class="nav-icon">📋</span> Propostas
+    </a></li>
+    <li><a href="{{ url_for('financeiro') }}" class="{% if request.endpoint=='financeiro' %}active{% endif %}">
+      <span class="nav-icon">💰</span> Financeiro
+    </a></li>
+    {% endif %}
+
+    <li><a href="{{ url_for('fornecedores') }}" class="{% if 'fornecedor' in request.endpoint %}active{% endif %}">
+      <span class="nav-icon">🏢</span> Fornecedores
+    </a></li>
+
+    {% if eh_proprietario %}
+    <li><a href="{{ url_for('equipe') }}" class="{% if 'equipe' in request.endpoint %}active{% endif %}">
+      <span class="nav-icon">👤</span> Equipe
+    </a></li>
+    {% endif %}
+  </ul>
+
+  <!-- Usuário logado + logout -->
+  <div class="sidebar-user">
+    <div class="sidebar-user-nome">{{ usuario_nome }}</div>
+    <div class="sidebar-user-perfil">{{ 'Proprietário' if eh_proprietario else 'Técnico' }}</div>
+    <a href="{{ url_for('logout') }}" class="sidebar-logout">Sair →</a>
+  </div>
+
+  <!-- Rodapé -->
+  <div class="sidebar-footer">
+    <div class="sidebar-status">Sistema integrado</div>
+    <div class="sidebar-status-val">Funcionalidade e gestão de 3 empresas</div>
+  </div>
+
+</nav>
+
+<main class="content">
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="flash flash-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+
+<script>
+function confirmar(msg) { return confirm(msg || 'Tem certeza?'); }
+setTimeout(()=>{ document.querySelectorAll('.flash').forEach(el=>el.style.opacity='0'); }, 4000);
+</script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Fornecedores{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Fornecedores</h1>
+  <a href="{{ url_for('fornecedor_novo') }}" class="btn btn-primary">+ Novo Fornecedor</a>
+</div>
+
+<form method="get" class="filter-bar">
+  <input type="text" name="busca" placeholder="Buscar por nome, contato ou cidade..." value="{{ busca }}" class="input-search">
+  <select name="categoria" class="input input-sm">
+    <option value="">Todas as categorias</option>
+    {% for cat in categorias %}
+    <option value="{{ cat }}" {% if categoria==cat %}selected{% endif %}>{{ cat }}</option>
+    {% endfor %}
+  </select>
+  <button class="btn btn-primary">Buscar</button>
+  {% if busca or categoria %}<a href="{{ url_for('fornecedores') }}" class="btn btn-ghost">Limpar</a>{% endif %}
+</form>
+
+<div class="panel">
+  {% if fornecedores %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Categoria</th>
+        <th>Contato</th>
+        <th>Telefone</th>
+        <th>E-mail</th>
+        <th>Cidade/UF</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for f in fornecedores %}
+    <tr>
+      <td style="font-weight:600">{{ f.nome }}</td>
+      <td>{% if f.categoria %}<span class="tag tag-fornecedor">{{ f.categoria }}</span>{% else %}—{% endif %}</td>
+      <td>{{ f.contato or '—' }}</td>
+      <td>
+        {% if f.telefone %}
+        <a href="https://wa.me/55{{ f.telefone|replace('(','') |replace(')','') |replace(' ','') |replace('-','') }}" target="_blank">📱 {{ f.telefone }}</a>
+        {% else %}—{% endif %}
+      </td>
+      <td>{% if f.email %}<a href="mailto:{{ f.email }}">{{ f.email }}</a>{% else %}—{% endif %}</td>
+      <td>{{ f.cidade or '—' }}{% if f.cidade and f.estado %}/{{ f.estado }}{% endif %}</td>
+      <td class="actions">
+        <a href="{{ url_for('fornecedor_editar', id=f.id) }}" class="btn btn-ghost btn-xs">Editar</a>
+        <form method="post" action="{{ url_for('fornecedor_excluir', id=f.id) }}" style="display:inline"
+              onsubmit="return confirmar('Excluir {{ f.nome }}?')">
+          <button class="btn btn-danger btn-xs">Excluir</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <p>Nenhum fornecedor cadastrado.</p>
+    <a href="{{ url_for('fornecedor_novo') }}" class="btn btn-primary">Cadastrar primeiro fornecedor</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

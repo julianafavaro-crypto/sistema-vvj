@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Projetos{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Projetos</h1>
+  <a href="{{ url_for('projeto_novo') }}" class="btn btn-primary">+ Novo Projeto</a>
+</div>
+
+<!-- Abas Ativos / Arquivados -->
+<div class="projetos-abas">
+  <a href="{{ url_for('projetos', busca=busca, fase=fase, status=status, aba='ativos') }}"
+     class="proj-aba {% if aba != 'arquivados' %}proj-aba-ativa{% endif %}">
+    📋 Ativos
+  </a>
+  <a href="{{ url_for('projetos', busca=busca, fase=fase, status=status, aba='arquivados') }}"
+     class="proj-aba {% if aba == 'arquivados' %}proj-aba-ativa{% endif %}">
+    🗄 Arquivados
+    {% if total_arquivados %}<span class="proj-aba-count">{{ total_arquivados }}</span>{% endif %}
+  </a>
+</div>
+
+<form method="get" class="filter-bar">
+  <input type="hidden" name="aba" value="{{ aba }}">
+  <input type="text" name="busca" placeholder="Buscar projeto, cliente, nº processo..." value="{{ busca }}" class="input-search">
+  <select name="fase" class="input input-sm">
+    <option value="">Todas as fases</option>
+    {% for f in fases %}<option value="{{ f }}" {% if fase==f %}selected{% endif %}>{{ f }}</option>{% endfor %}
+  </select>
+  <select name="status" class="input input-sm">
+    <option value="">Todos os status</option>
+    {% for s in status_options %}<option value="{{ s }}" {% if status==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+  </select>
+  <button class="btn btn-primary">Filtrar</button>
+  {% if fase or status or busca %}<a href="{{ url_for('projetos', aba=aba) }}" class="btn btn-ghost">Limpar</a>{% endif %}
+</form>
+
+{% if aba == 'arquivados' %}
+<!-- ── LISTA ARQUIVADOS ── -->
+<div class="panel">
+  {% if projetos %}
+  <table class="table">
+    <thead>
+      <tr><th>Projeto</th><th>Cliente</th><th>Serviço</th><th>Responsável</th><th>Valor</th><th>Status</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for p in projetos %}
+    <tr>
+      <td><a href="{{ url_for('projeto_detalhe', id=p.id) }}" style="color:var(--green);font-weight:600;text-decoration:none">{{ p.nome }}</a></td>
+      <td>{{ p.cliente_nome or '—' }}</td>
+      <td><span class="tag">{{ p.tipo_servico or '—' }}</span></td>
+      <td>{{ p.responsavel or '—' }}</td>
+      <td>{% if p.valor_total %}R$ {{ "%.2f"|format(p.valor_total) }}{% else %}—{% endif %}</td>
+      <td><span class="status-badge status-{{ p.status|replace(' ','') }}">{{ p.status }}</span></td>
+      <td>
+        <form method="post" action="{{ url_for('projeto_arquivar', id=p.id) }}" style="display:inline">
+          <button class="btn btn-ghost btn-xs" title="Reativar projeto">↩ Reativar</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <p>Nenhum projeto arquivado.</p>
+  </div>
+  {% endif %}
+</div>
+
+{% else %}
+<!-- ── KANBAN ATIVOS ── -->
+<div class="kanban-view">
+  {% for f in fases %}
+  {% set proj_fase = projetos | selectattr('fase','equalto',f) | list %}
+  <div class="kanban-col">
+    <div class="kanban-header fase-{{ loop.index }}">
+      <span>{{ f }}</span>
+      <span class="kanban-count">{{ proj_fase|length }}</span>
+    </div>
+    {% for p in proj_fase %}
+    <a href="{{ url_for('projeto_detalhe', id=p.id) }}" class="kanban-card">
+      <div class="kanban-nome">{{ p.nome }}</div>
+      <div class="kanban-cliente">{{ p.cliente_nome or '—' }}</div>
+      <div class="kanban-footer">
+        <span class="tag tag-sm">{{ p.tipo_servico }}</span>
+        <span class="status-badge status-{{ p.status|replace(' ','') }} badge-xs">{{ p.status }}</span>
+      </div>
+      {% if p.data_previsao %}
+      <div class="kanban-prazo {% if p.data_previsao < hoje %}prazo-atrasado{% endif %}">
+        📅 {{ p.data_previsao }}
+      </div>
+      {% endif %}
+    </a>
+    {% endfor %}
+    {% if not proj_fase %}
+    <div class="kanban-empty">Nenhum projeto</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+{% if fase or status or busca %}
+<div class="panel mt">
+  <table class="table">
+    <thead><tr><th>Projeto</th><th>Cliente</th><th>Serviço</th><th>Fase</th><th>Status</th><th>Valor</th><th>Prazo</th></tr></thead>
+    <tbody>
+    {% for p in projetos %}
+    <tr>
+      <td><a href="{{ url_for('projeto_detalhe', id=p.id) }}">{{ p.nome }}</a></td>
+      <td>{{ p.cliente_nome or '—' }}</td>
+      <td><span class="tag">{{ p.tipo_servico }}</span></td>
+      <td><span class="fase-badge fase-{{ fases.index(p.fase)+1 if p.fase in fases else 1 }}">{{ p.fase }}</span></td>
+      <td><span class="status-badge status-{{ p.status|replace(' ','') }}">{{ p.status }}</span></td>
+      <td>{% if p.valor_total %}R$ {{ "%.2f"|format(p.valor_total) }}{% else %}—{% endif %}</td>
+      <td class="{% if p.data_previsao and p.data_previsao < hoje %}valor-red{% endif %}">{{ p.data_previsao or '—' }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endif %}
+
+{% endblock %}

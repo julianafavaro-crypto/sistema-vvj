@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{{ titulo }}</h1>
+  <a href="{{ url_for('clientes') }}" class="btn btn-ghost">← Voltar</a>
+</div>
+
+<div class="panel form-panel">
+  <form method="post">
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Nome completo / Razão Social *</label>
+        <input type="text" name="nome" value="{{ cliente.nome if cliente else '' }}" required class="input">
+      </div>
+      <div class="form-group">
+        <label>Tipo</label>
+        <select name="tipo" class="input">
+          <option value="PF" {% if not cliente or cliente.tipo=='PF' %}selected{% endif %}>Pessoa Física</option>
+          <option value="PJ" {% if cliente and cliente.tipo=='PJ' %}selected{% endif %}>Pessoa Jurídica</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>CPF / CNPJ</label>
+        <input type="text" name="cpf_cnpj" value="{{ cliente.cpf_cnpj if cliente else '' }}" class="input" placeholder="000.000.000-00">
+      </div>
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" name="email" value="{{ cliente.email if cliente else '' }}" class="input">
+      </div>
+      <div class="form-group">
+        <label>WhatsApp / Telefone</label>
+        <input type="text" name="telefone" value="{{ cliente.telefone if cliente else '' }}" class="input" placeholder="(42) 99999-9999">
+      </div>
+      <div class="form-group full">
+        <label>Endereço</label>
+        <input type="text" name="endereco" value="{{ cliente.endereco if cliente else '' }}" class="input">
+      </div>
+      <div class="form-group">
+        <label>Cidade</label>
+        <input type="text" name="cidade" value="{{ cliente.cidade if cliente else '' }}" class="input">
+      </div>
+      <div class="form-group">
+        <label>Estado</label>
+        <select name="estado" class="input">
+          {% for uf in ['PR','SC','SP','RS','MG','RJ','GO','MT','MS','BA','PA','AM','ES','DF'] %}
+          <option value="{{ uf }}" {% if cliente and cliente.estado==uf %}selected{% elif not cliente and uf=='PR' %}selected{% endif %}>{{ uf }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Estado Civil</label>
+        <select name="estado_civil" class="input">
+          {% for ec in ['Não informado', 'Solteiro(a)', 'Casado(a)', 'União Estável', 'Divorciado(a)', 'Viúvo(a)'] %}
+          <option value="{{ ec }}" {% if cliente and cliente.estado_civil == ec %}selected{% elif not cliente and ec == 'Não informado' %}selected{% endif %}>{{ ec }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Prospectante <span style="font-size:.75rem;color:#999">(quem indicou ou captou)</span></label>
+        <select name="prospectante" class="input">
+          <option value="">— Não informado —</option>
+          {% for p in prospectantes %}
+          <option value="{{ p }}" {% if cliente and cliente.prospectante == p %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Observações</label>
+        <textarea name="observacoes" class="input textarea" rows="3">{{ cliente.observacoes if cliente else '' }}</textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">💾 Salvar Cliente</button>
+      <a href="{{ url_for('clientes') }}" class="btn btn-ghost">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

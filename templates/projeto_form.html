@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{{ titulo }}</h1>
+  <a href="{{ url_for('projetos') }}" class="btn btn-ghost">← Voltar</a>
+</div>
+
+<div class="panel form-panel">
+  <form method="post">
+    <div class="form-section-title">Dados Básicos</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Nome do Projeto *</label>
+        <input type="text" name="nome" value="{{ projeto.nome if projeto else '' }}" required class="input" placeholder="Ex: SILVA_RESERVA_LEGAL_CAMPO_LARGO">
+      </div>
+      <div class="form-group">
+        <label>Cliente</label>
+        <select name="cliente_id" class="input">
+          <option value="">— Selecionar —</option>
+          {% for c in clientes %}
+          <option value="{{ c.id }}" {% if projeto and projeto.cliente_id==c.id %}selected{% endif %}>{{ c.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tipo de Serviço</label>
+        <select name="tipo_servico" class="input" id="tipo_servico">
+          {% for t in tipos_servico %}
+          <option value="{{ t }}" {% if projeto and projeto.tipo_servico==t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Fase</label>
+        <select name="fase" class="input">
+          {% for f in fases %}
+          <option value="{{ f }}" {% if projeto and projeto.fase==f %}selected{% elif not projeto and f=='Captação' %}selected{% endif %}>{{ f }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select name="status" class="input">
+          {% for s in status_options %}
+          <option value="{{ s }}" {% if projeto and projeto.status==s %}selected{% elif not projeto and s=='Em andamento' %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-section-title">Processo / Órgão</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Número do Processo</label>
+        <input type="text" name="numero_processo" value="{{ projeto.numero_processo if projeto else '' }}" class="input">
+      </div>
+      <div class="form-group">
+        <label>Órgão Responsável</label>
+        <input type="text" name="orgao" value="{{ projeto.orgao if projeto else '' }}" class="input" placeholder="Ex: IAT, IBAMA, INCRA, Cartório...">
+      </div>
+      <div class="form-group">
+        <label>Área / Localização</label>
+        <input type="text" name="area" value="{{ projeto.area if projeto else '' }}" class="input" placeholder="Ex: 25,4 ha — Campo Largo/PR">
+      </div>
+      <div class="form-group">
+        <label>Responsável Técnico</label>
+        <select name="responsavel" class="input" id="sel-responsavel">
+          {% for membro in equipe %}
+          <option value="{{ membro }}"
+            {% if projeto and projeto.responsavel == membro %}selected
+            {% elif not projeto and responsavel_padrao.get(request.args.get('tipo_servico','')) == membro %}selected
+            {% elif not projeto and membro == 'Juliana' and not responsavel_padrao.get(request.args.get('tipo_servico','')) %}selected
+            {% endif %}>{{ membro }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-section-title">Prazos</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Data de Início</label>
+        <input type="date" name="data_inicio" value="{{ projeto.data_inicio if projeto else hoje }}" class="input">
+      </div>
+      <div class="form-group">
+        <label>Previsão de Entrega</label>
+        <input type="date" name="data_previsao" value="{{ projeto.data_previsao if projeto else '' }}" class="input">
+      </div>
+      {% if projeto %}
+      <div class="form-group">
+        <label>Data de Conclusão</label>
+        <input type="date" name="data_conclusao" value="{{ projeto.data_conclusao if projeto else '' }}" class="input">
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="form-section-title">Financeiro</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Valor Total (R$)</label>
+        <input type="number" name="valor_total" value="{{ projeto.valor_total if projeto else '' }}" class="input" step="0.01" min="0" placeholder="0,00">
+      </div>
+      {% if not projeto %}
+      <div class="form-group">
+        <label>Valor de Entrada (R$)</label>
+        <input type="number" name="valor_entrada" class="input" step="0.01" min="0" placeholder="0,00">
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="form-section-title">Descrição</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Descrição do Serviço</label>
+        <textarea name="descricao" class="input textarea" rows="3">{{ projeto.descricao if projeto else '' }}</textarea>
+      </div>
+      <div class="form-group full">
+        <label>Observações Internas</label>
+        <textarea name="observacoes" class="input textarea" rows="2">{{ projeto.observacoes if projeto else '' }}</textarea>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">💾 Salvar Projeto</button>
+      <a href="{{ url_for('projetos') }}" class="btn btn-ghost">Cancelar</a>
+      {% if projeto %}
+      <form method="post" action="{{ url_for('projeto_excluir', id=projeto.id) }}" style="display:inline"
+            onsubmit="return confirmar('Excluir este projeto permanentemente?')">
+        <button class="btn btn-danger">🗑 Excluir Projeto</button>
+      </form>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<script>
+// Preenche responsável automaticamente ao escolher tipo de serviço
+const responsavelPadrao = {{ responsavel_padrao | tojson }};
+const selTipo = document.getElementById('tipo_servico');
+const selResp = document.getElementById('sel-responsavel');
+
+{% if not projeto %}
+selTipo.addEventListener('change', function() {
+  const resp = responsavelPadrao[this.value];
+  if (resp) {
+    for (let opt of selResp.options) {
+      opt.selected = (opt.value === resp);
+    }
+  }
+});
+{% endif %}
+</script>
+{% endblock %}

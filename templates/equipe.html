@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Equipe — Sistema VVJ{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Equipe</h1>
+  <a href="{{ url_for('equipe_novo') }}" class="btn btn-primary">+ Novo Membro</a>
+</div>
+
+<div class="panel" style="margin-bottom:1.25rem">
+  <div class="panel-header"><h2>Proprietários</h2></div>
+  <table class="table">
+    <thead><tr><th>Nome</th><th>Login</th><th>Cargo</th><th>Situação</th><th>Ações</th></tr></thead>
+    <tbody>
+    {% for m in membros if m.perfil == 'proprietario' %}
+    <tr>
+      <td style="font-weight:700">{{ m.nome }}</td>
+      <td><code style="background:#f3f4f6;padding:.1rem .4rem;border-radius:4px;font-size:.82rem">{{ m.login }}</code></td>
+      <td>{{ m.cargo or '—' }}</td>
+      <td><span class="badge-pago">Acesso total</span></td>
+      <td class="actions">
+        <a href="{{ url_for('equipe_editar', id=m.id) }}" class="btn btn-ghost btn-xs">Editar</a>
+        {% if m.id != session.get('usuario_id') %}
+        <form method="post" action="{{ url_for('equipe_excluir', id=m.id) }}" style="display:inline"
+              onsubmit="return confirmar('Remover {{ m.nome }}?')">
+          <button class="btn btn-danger btn-xs">Remover</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="empty-state">Nenhum proprietário cadastrado.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <div class="panel-header"><h2>Técnicos</h2></div>
+  <table class="table">
+    <thead><tr><th>Nome</th><th>Login</th><th>Cargo / Especialidade</th><th>Situação</th><th>Ações</th></tr></thead>
+    <tbody>
+    {% for m in membros if m.perfil == 'tecnico' %}
+    <tr>
+      <td style="font-weight:700">{{ m.nome }}</td>
+      <td><code style="background:#f3f4f6;padding:.1rem .4rem;border-radius:4px;font-size:.82rem">{{ m.login }}</code></td>
+      <td>{{ m.cargo or '—' }}</td>
+      <td>{% if m.ativo %}<span class="badge-pago">Ativo</span>{% else %}<span class="badge-atrasado">Inativo</span>{% endif %}</td>
+      <td class="actions">
+        <a href="{{ url_for('equipe_editar', id=m.id) }}" class="btn btn-ghost btn-xs">Editar</a>
+        <form method="post" action="{{ url_for('equipe_excluir', id=m.id) }}" style="display:inline"
+              onsubmit="return confirmar('Remover {{ m.nome }}?')">
+          <button class="btn btn-danger btn-xs">Remover</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="empty-state">Nenhum técnico cadastrado.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Alterar minha senha -->
+<div class="panel" style="margin-top:1.25rem;max-width:420px">
+  <div class="panel-header"><h2>🔒 Alterar minha senha</h2></div>
+  <form method="post" action="{{ url_for('alterar_senha') }}">
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+      <div class="form-group" style="flex:1;min-width:140px">
+        <label>Nova senha</label>
+        <input type="password" name="nova_senha" class="input" minlength="4" required>
+      </div>
+      <div class="form-group" style="flex:1;min-width:140px">
+        <label>Confirmar</label>
+        <input type="password" name="confirmar_senha" class="input" minlength="4" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

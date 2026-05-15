@@ -165,6 +165,8 @@ def init_db():
         data_conclusao TEXT,
         descricao TEXT,
         observacoes TEXT,
+        prospectante TEXT,
+        arquivado INTEGER DEFAULT 0,
         created_at TEXT DEFAULT (date('now'))
     )""")
 

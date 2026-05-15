@@ -10,6 +10,9 @@ import storage as doc_storage
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'vvj-sistema-2026-dev')
 
+# Inicializa banco de dados e usuários padrão ao subir (gunicorn ou dev)
+init_db()
+
 # ── DECORADORES DE ACESSO ─────────────────────────────────────────────────────
 
 def login_required(f):

@@ -234,6 +234,26 @@ def init_db():
         created_at TEXT DEFAULT (date('now'))
     )""")
 
+    # Cria usuários padrão se não existirem
+    from werkzeug.security import generate_password_hash
+    usuarios_padrao = [
+        ("Juliana",          "juliana",  "vvj2026", "proprietario", "Proprietária"),
+        ("Patrícia",         "patricia", "vvj2026", "proprietario", "Proprietária"),
+        ("Dirley",           "dirley",   "vvj2026", "proprietario", "Proprietário"),
+        ("Venicius",         "venicius", "vvj2026", "proprietario", "Proprietário"),
+        ("Adriane Ciliao",   "adriane",  "vvj2026", "tecnico",      "Licenciamento"),
+        ("Ricardo",          "ricardo",  "vvj2026", "tecnico",      "Georreferenciamento"),
+        ("Helena",           "helena",   "vvj2026", "tecnico",      "Coordenadora"),
+        ("Luciana",          "luciana",  "vvj2026", "tecnico",      "Técnica"),
+    ]
+    for nome, login, senha, perfil, cargo in usuarios_padrao:
+        existe = c.execute("SELECT id FROM usuarios WHERE login=?", [login]).fetchone()
+        if not existe:
+            c.execute(
+                "INSERT INTO usuarios (nome, login, senha_hash, perfil, cargo) VALUES (?,?,?,?,?)",
+                [nome, login, generate_password_hash(senha), perfil, cargo]
+            )
+
     conn.commit()
     conn.close()
 

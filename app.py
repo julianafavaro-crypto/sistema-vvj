@@ -8,7 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import storage as doc_storage
 
 app = Flask(__name__)
-app.secret_key = "vvj-sistema-2026"
+app.secret_key = os.environ.get('SECRET_KEY', 'vvj-sistema-2026-dev')
 
 # ── DECORADORES DE ACESSO ─────────────────────────────────────────────────────
 

@@ -129,7 +129,7 @@ PROSPECTANTES = ["Juliana", "Dirley Schimidlen", "Ricardo", "Indicação", "Site
 
 def init_db():
     conn = get_db()
-    c = conn.cursor()
+    c = conn  # _PgConn e SQLite ambos suportam .execute() diretamente
 
     c.execute("""CREATE TABLE IF NOT EXISTS clientes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -1,5 +1,0 @@
-[phases.setup]
-nixPkgs = ["python311", "gcc"]
-
-[start]
-cmd = "sh -c 'gunicorn app:app --bind 0.0.0.0:$PORT --workers 2'"

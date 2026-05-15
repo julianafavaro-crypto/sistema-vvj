@@ -173,7 +173,7 @@ def dashboard():
     clientes = db.execute("SELECT COUNT(*) as total FROM clientes").fetchone()
     financeiro = db.execute("SELECT COALESCE(SUM(valor),0) as total FROM pagamentos WHERE status='Pago'").fetchone()
     a_receber = db.execute("SELECT COALESCE(SUM(valor),0) as total FROM pagamentos WHERE status='Pendente'").fetchone()
-    atrasados = db.execute("SELECT COALESCE(SUM(valor),0) as total FROM pagamentos WHERE status='Pendente' AND data_vencimento < date('now')").fetchone()
+    atrasados = db.execute("SELECT COALESCE(SUM(valor),0) as total FROM pagamentos WHERE status='Pendente' AND data_vencimento < ?", [date.today().isoformat()]).fetchone()
 
     por_fase = {f: 0 for f in FASES}
     por_status = {}
@@ -192,9 +192,9 @@ def dashboard():
     pagamentos_atrasados = db.execute("""
         SELECT pg.*, p.nome as projeto_nome FROM pagamentos pg
         JOIN projetos p ON pg.projeto_id=p.id
-        WHERE pg.status='Pendente' AND pg.data_vencimento < date('now')
+        WHERE pg.status='Pendente' AND pg.data_vencimento < ?
         ORDER BY pg.data_vencimento
-    """).fetchall()
+    """, [date.today().isoformat()]).fetchall()
 
     db.close()
     return render_template("dashboard.html",

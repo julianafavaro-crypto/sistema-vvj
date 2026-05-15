@@ -7,6 +7,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE $PORT
+RUN chmod +x start.sh
 
-CMD ["sh", "-c", "gunicorn app:app --bind 0.0.0.0:$PORT --workers 2"]
+EXPOSE 8080
+
+CMD ["/bin/sh", "/app/start.sh"]

@@ -181,13 +181,15 @@ def dashboard():
         por_fase[p["fase"]] = por_fase.get(p["fase"], 0) + 1
         por_status[p["status"]] = por_status.get(p["status"], 0) + 1
 
+    from datetime import timedelta
+    data_7dias = (date.today() + timedelta(days=7)).isoformat()
     alertas = db.execute("""
         SELECT p.id, p.nome, c.nome as cliente_nome, p.data_previsao, p.fase
         FROM projetos p LEFT JOIN clientes c ON p.cliente_id=c.id
-        WHERE p.data_previsao IS NOT NULL AND p.data_previsao <= date('now','+7 days')
+        WHERE p.data_previsao IS NOT NULL AND p.data_previsao <= ?
         AND p.fase != 'Faturamento' AND p.status != 'Concluído'
         ORDER BY p.data_previsao
-    """).fetchall()
+    """, [data_7dias]).fetchall()
 
     pagamentos_atrasados = db.execute("""
         SELECT pg.*, p.nome as projeto_nome FROM pagamentos pg
@@ -502,7 +504,7 @@ def financeiro():
         FROM pagamentos pg
         JOIN projetos p ON pg.projeto_id=p.id
         LEFT JOIN clientes c ON p.cliente_id=c.id
-        WHERE strftime('%Y-%m', COALESCE(pg.data_pagamento, pg.data_vencimento)) = ?
+        WHERE substr(COALESCE(pg.data_pagamento, pg.data_vencimento), 1, 7) = ?
         ORDER BY pg.data_vencimento
     """, [mes]).fetchall()
     total_pago = sum(p["valor"] for p in pagamentos if p["status"] == "Pago")

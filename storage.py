@@ -58,9 +58,9 @@ def upload(arquivo_werkzeug, nome_cliente, categoria):
             except Exception:
                 break
         arquivo_werkzeug.seek(0)
-        r2.upload_fileobj(arquivo_werkzeug, R2_BUCKET, tentativa)
-        arquivo_werkzeug.seek(0)
-        tamanho = len(arquivo_werkzeug.read())
+        conteudo = arquivo_werkzeug.read()
+        tamanho = len(conteudo)
+        r2.upload_fileobj(io.BytesIO(conteudo), R2_BUCKET, tentativa)
         return tentativa, tentativa.split('/')[-1], tamanho
 
     else:

@@ -508,8 +508,6 @@ def financeiro():
         ORDER BY pg.data_vencimento
     """, [mes]).fetchall()
     total_pago = sum(p["valor"] for p in pagamentos if p["status"] == "Pago")
-    total_pendente = sum(p["valor"] for p in pagamentos if p["status"] == "Pendente")
-    total_atrasado = sum(p["valor"] for p in pagamentos if p["status"] == "Pendente" and p["data_vencimento"] and p["data_vencimento"] < date.today().isoformat())
     todos = db.execute("""
         SELECT pg.*, p.nome as projeto_nome, c.nome as cliente_nome
         FROM pagamentos pg
@@ -517,6 +515,9 @@ def financeiro():
         LEFT JOIN clientes c ON p.cliente_id=c.id
         ORDER BY pg.data_vencimento DESC
     """).fetchall()
+    # Totais gerais (todos os meses)
+    total_pendente = sum(p["valor"] for p in todos if p["status"] == "Pendente")
+    total_atrasado = sum(p["valor"] for p in todos if p["status"] == "Pendente" and p["data_vencimento"] and p["data_vencimento"] < date.today().isoformat())
     db.close()
     return render_template("financeiro.html", pagamentos=pagamentos, todos=todos,
         mes=mes, total_pago=total_pago, total_pendente=total_pendente, total_atrasado=total_atrasado)

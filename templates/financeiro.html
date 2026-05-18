@@ -3,10 +3,23 @@
 {% block content %}
 <div class="page-header">
   <h1>💰 Financeiro</h1>
-  <form method="get" style="display:flex;gap:.5rem;align-items:center">
-    <input type="month" name="mes" value="{{ mes }}" class="input input-sm">
-    <button class="btn btn-primary btn-sm">Filtrar</button>
-  </form>
+  <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+    <form method="get" style="display:flex;gap:.5rem;align-items:center">
+      <label style="font-size:.85rem;color:#888">Mês:</label>
+      <input type="month" name="mes" value="{{ mes }}" class="input input-sm">
+      <input type="hidden" name="ano" value="{{ ano }}">
+      <button class="btn btn-primary btn-sm">Filtrar</button>
+    </form>
+    <form method="get" style="display:flex;gap:.5rem;align-items:center">
+      <label style="font-size:.85rem;color:#888">Ano:</label>
+      <select name="ano" class="input input-sm" onchange="this.form.submit()">
+        {% for y in range(2024, 2030) %}
+          <option value="{{ y }}" {% if y|string == ano %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+      <input type="hidden" name="mes" value="{{ mes }}">
+    </form>
+  </div>
 </div>
 
 <div class="cards-grid">
@@ -100,6 +113,49 @@
     <tr><td colspan="6" class="empty-state">Nenhum pagamento pendente.</td></tr>
     {% endfor %}
     </tbody>
+  </table>
+</div>
+
+<div class="panel mt">
+  <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+    <h2>📈 Resumo Anual — {{ ano }}</h2>
+    <span style="font-size:.95rem;color:#888">Total recebido no ano: <strong style="color:#22c55e">R$ {{ "%.2f"|format(total_ano) }}</strong></span>
+  </div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Mês</th>
+        <th>Recebido</th>
+        <th>A Receber (previsto)</th>
+        <th>Acumulado no ano</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in resumo_anual %}
+    <tr style="{% if r.chave == mes %}background:rgba(34,197,94,.08);font-weight:600{% endif %}">
+      <td>
+        <a href="?mes={{ r.chave }}&ano={{ ano }}" style="color:inherit;text-decoration:none">
+          {{ r.mes }}/{{ ano }}
+        </a>
+      </td>
+      <td style="color:{% if r.recebido > 0 %}#22c55e{% else %}#aaa{% endif %}">
+        R$ {{ "%.2f"|format(r.recebido) }}
+      </td>
+      <td style="color:{% if r.pendente > 0 %}#f59e0b{% else %}#aaa{% endif %}">
+        R$ {{ "%.2f"|format(r.pendente) }}
+      </td>
+      <td><strong>R$ {{ "%.2f"|format(r.acumulado) }}</strong></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr style="background:rgba(34,197,94,.12);font-weight:700">
+        <td>TOTAL {{ ano }}</td>
+        <td style="color:#22c55e">R$ {{ "%.2f"|format(total_ano) }}</td>
+        <td></td>
+        <td>R$ {{ "%.2f"|format(total_ano) }}</td>
+      </tr>
+    </tfoot>
   </table>
 </div>
 {% endblock %}

@@ -498,6 +498,7 @@ def propostas():
 @proprietario_required
 def financeiro():
     db = get_db()
+    ano = request.args.get("ano", str(date.today().year))
     mes = request.args.get("mes", date.today().strftime("%Y-%m"))
     pagamentos = db.execute("""
         SELECT pg.*, p.nome as projeto_nome, c.nome as cliente_nome
@@ -518,9 +519,29 @@ def financeiro():
     # Totais gerais (todos os meses)
     total_pendente = sum(p["valor"] for p in todos if p["status"] == "Pendente")
     total_atrasado = sum(p["valor"] for p in todos if p["status"] == "Pendente" and p["data_vencimento"] and p["data_vencimento"] < date.today().isoformat())
+
+    # Resumo anual mês a mês
+    MESES_NOMES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]
+    resumo_anual = []
+    acumulado = 0.0
+    for m in range(1, 13):
+        chave = f"{ano}-{m:02d}"
+        recebido = sum(p["valor"] for p in todos if p["status"] == "Pago" and p["data_pagamento"] and p["data_pagamento"].startswith(chave))
+        pendente  = sum(p["valor"] for p in todos if p["status"] == "Pendente" and (p["data_vencimento"] or "").startswith(chave))
+        acumulado += recebido
+        resumo_anual.append({
+            "mes": MESES_NOMES[m-1],
+            "chave": chave,
+            "recebido": recebido,
+            "pendente": pendente,
+            "acumulado": acumulado,
+        })
+    total_ano = acumulado
+
     db.close()
     return render_template("financeiro.html", pagamentos=pagamentos, todos=todos,
-        mes=mes, total_pago=total_pago, total_pendente=total_pendente, total_atrasado=total_atrasado)
+        mes=mes, ano=ano, total_pago=total_pago, total_pendente=total_pendente,
+        total_atrasado=total_atrasado, resumo_anual=resumo_anual, total_ano=total_ano)
 
 # ─── DETALHE DO CLIENTE ──────────────────────────────────────────────────────
 

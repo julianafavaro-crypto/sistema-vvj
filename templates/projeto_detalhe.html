@@ -169,6 +169,60 @@
       </form>
     </div>
 
+    <!-- Custos Documentais -->
+    <div class="panel mt">
+      <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+        <h2>🧾 Custos Documentais</h2>
+        {% if total_custos_a_cobrar > 0 %}
+        <span style="background:#fef3c7;color:#d97706;padding:.2rem .6rem;border-radius:99px;font-size:.8rem;font-weight:600">
+          A cobrar: R$ {{ "%.2f"|format(total_custos_a_cobrar) }}
+        </span>
+        {% endif %}
+      </div>
+      {% if custos %}
+      <div class="pagamentos-list">
+        {% for c in custos %}
+        <div class="pagamento-item {% if c.status=='Cobrado' %}pago{% endif %}">
+          <div class="pag-info">
+            <span class="pag-desc">{{ c.descricao }} <small style="color:#888">({{ c.categoria }})</small></span>
+            <span class="pag-valor">R$ {{ "%.2f"|format(c.valor) }}</span>
+          </div>
+          <div class="pag-meta">
+            <span style="color:#888;font-size:.8rem">{{ c.data }}</span>
+            {% if c.status == 'Cobrado' %}
+              <span class="badge-pago">✓ Cobrado</span>
+            {% else %}
+              <span class="badge-pendente">A cobrar</span>
+              <form method="post" action="{{ url_for('custo_cobrado', id=c.id) }}" style="display:inline">
+                <button class="btn btn-success btn-xs">✓ Cobrado</button>
+              </form>
+            {% endif %}
+            <form method="post" action="{{ url_for('custo_excluir', id=c.id) }}" style="display:inline"
+                  onsubmit="return confirmar('Excluir este custo?')">
+              <button class="btn btn-danger btn-xs">✕</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <div style="padding:.5rem 0;font-size:.85rem;color:#888;border-top:1px solid var(--border)">
+        Total de custos: <strong>R$ {{ "%.2f"|format(total_custos) }}</strong>
+      </div>
+      {% endif %}
+      <form method="post" action="{{ url_for('custo_novo') }}" class="add-pag-form">
+        <input type="hidden" name="projeto_id" value="{{ projeto.id }}">
+        <input type="text" name="descricao" placeholder="Ex: Taxa SINAFLOR, ART..." class="input input-sm" required>
+        <input type="number" name="valor" placeholder="Valor R$" class="input input-sm" step="0.01" min="0" required>
+        <input type="date" name="data" class="input input-sm" value="{{ hoje }}">
+        <select name="categoria" class="input input-sm">
+          {% for cat in categorias_custo %}
+          <option>{{ cat }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn btn-warning btn-sm">+ Custo</button>
+      </form>
+    </div>
+
     <!-- Histórico -->
     <div class="panel mt">
       <div class="panel-header"><h2>📋 Histórico</h2></div>

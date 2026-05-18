@@ -225,6 +225,17 @@ def init_db():
         created_at TEXT DEFAULT (date('now'))
     )""")
 
+    c.execute("""CREATE TABLE IF NOT EXISTS custos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        projeto_id INTEGER REFERENCES projetos(id) ON DELETE CASCADE,
+        descricao TEXT NOT NULL,
+        valor REAL NOT NULL,
+        data TEXT DEFAULT (date('now')),
+        categoria TEXT DEFAULT 'Outros',
+        status TEXT DEFAULT 'A cobrar',
+        observacao TEXT
+    )""")
+
     c.execute("""CREATE TABLE IF NOT EXISTS usuarios (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nome TEXT NOT NULL,

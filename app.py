@@ -332,17 +332,23 @@ def projeto_detalhe(id):
     tarefas = db.execute("SELECT * FROM tarefas WHERE projeto_id=? ORDER BY fase, id", [id]).fetchall()
     pagamentos = db.execute("SELECT * FROM pagamentos WHERE projeto_id=? ORDER BY data_vencimento", [id]).fetchall()
     historico = db.execute("SELECT * FROM historico WHERE projeto_id=? ORDER BY id DESC", [id]).fetchall()
+    custos = db.execute("SELECT * FROM custos WHERE projeto_id=? ORDER BY data DESC", [id]).fetchall()
     total_pago = sum(p["valor"] for p in pagamentos if p["status"] == "Pago")
     total_pendente = sum(p["valor"] for p in pagamentos if p["status"] == "Pendente")
+    total_custos = sum(c["valor"] for c in custos)
+    total_custos_a_cobrar = sum(c["valor"] for c in custos if c["status"] == "A cobrar")
     tarefas_total = len(tarefas)
     tarefas_ok = sum(1 for t in tarefas if t["concluida"])
     progresso = int(tarefas_ok / tarefas_total * 100) if tarefas_total else 0
     clientes_list = db.execute("SELECT id, nome FROM clientes ORDER BY nome").fetchall()
     db.close()
     return render_template("projeto_detalhe.html", projeto=projeto, tarefas=tarefas,
-        pagamentos=pagamentos, historico=historico, total_pago=total_pago,
-        total_pendente=total_pendente, progresso=progresso, tarefas_ok=tarefas_ok,
-        tarefas_total=tarefas_total, clientes=clientes_list)
+        pagamentos=pagamentos, historico=historico, custos=custos,
+        total_pago=total_pago, total_pendente=total_pendente,
+        total_custos=total_custos, total_custos_a_cobrar=total_custos_a_cobrar,
+        progresso=progresso, tarefas_ok=tarefas_ok,
+        tarefas_total=tarefas_total, clientes=clientes_list,
+        categorias_custo=CATEGORIAS_CUSTO)
 
 @app.route("/projetos/<int:id>/editar", methods=["GET","POST"])
 def projeto_editar(id):
@@ -467,6 +473,57 @@ def pagamento_excluir(id):
     pg = db.execute("SELECT * FROM pagamentos WHERE id=?", [id]).fetchone()
     proj_id = pg["projeto_id"]
     db.execute("DELETE FROM pagamentos WHERE id=?", [id])
+    db.commit()
+    db.close()
+    return redirect(url_for("projeto_detalhe", id=proj_id))
+
+# ─── CUSTOS DOCUMENTAIS ──────────────────────────────────────────────────────
+
+CATEGORIAS_CUSTO = [
+    "Taxa IBAMA/SINAFLOR", "Taxa IAT", "Taxa INCRA", "Taxa Cartório",
+    "ART CREA", "Muda/Reposição Florestal", "Transporte/Campo",
+    "Cópia/Impressão", "Despachante", "Outros"
+]
+
+@app.route("/custos/novo", methods=["POST"])
+@login_required
+def custo_novo():
+    db = get_db()
+    proj_id = request.form["projeto_id"]
+    valor = float(request.form.get("valor", 0) or 0)
+    descricao = request.form.get("descricao", "")
+    db.execute("""INSERT INTO custos (projeto_id, descricao, valor, data, categoria, observacao)
+                  VALUES (?,?,?,?,?,?)""",
+        [proj_id, descricao, valor,
+         request.form.get("data", date.today().isoformat()),
+         request.form.get("categoria", "Outros"),
+         request.form.get("observacao", "")])
+    db.execute("INSERT INTO historico (projeto_id, descricao) VALUES (?,?)",
+        [proj_id, f"Custo documental lançado: {descricao} — R$ {valor:.2f}"])
+    db.commit()
+    db.close()
+    return redirect(url_for("projeto_detalhe", id=proj_id))
+
+@app.route("/custos/<int:id>/cobrado", methods=["POST"])
+@login_required
+def custo_cobrado(id):
+    db = get_db()
+    custo = db.execute("SELECT * FROM custos WHERE id=?", [id]).fetchone()
+    db.execute("UPDATE custos SET status='Cobrado' WHERE id=?", [id])
+    db.execute("INSERT INTO historico (projeto_id, descricao) VALUES (?,?)",
+        [custo["projeto_id"], f"Custo marcado como cobrado: {custo['descricao']} — R$ {custo['valor']:.2f}"])
+    db.commit()
+    proj_id = custo["projeto_id"]
+    db.close()
+    return redirect(url_for("projeto_detalhe", id=proj_id))
+
+@app.route("/custos/<int:id>/excluir", methods=["POST"])
+@login_required
+def custo_excluir(id):
+    db = get_db()
+    custo = db.execute("SELECT * FROM custos WHERE id=?", [id]).fetchone()
+    proj_id = custo["projeto_id"]
+    db.execute("DELETE FROM custos WHERE id=?", [id])
     db.commit()
     db.close()
     return redirect(url_for("projeto_detalhe", id=proj_id))

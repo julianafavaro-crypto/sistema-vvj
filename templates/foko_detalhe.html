@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}{{ s.titulo }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ s.titulo }}</h1>
+    <div class="sub-header">
+      <span class="tag">🤝 Foko {{ "%.0f"|format(r.pct_foko) }}% / JF {{ "%.0f"|format(r.pct_jf) }}%</span>
+      <span class="tag">{{ s.status }}</span>
+      {% if s.cliente_nome %}<span class="tag">{{ s.cliente_nome }}</span>{% endif %}
+      {% if projeto %}<a href="{{ url_for('projeto_detalhe', id=projeto.id) }}" class="tag">📂 {{ projeto.nome }}</a>{% endif %}
+    </div>
+  </div>
+  <div class="header-actions">
+    <a href="{{ url_for('foko.index') }}" class="btn btn-ghost">← Voltar</a>
+    <a href="{{ url_for('foko.editar', id=s.id) }}" class="btn btn-ghost">✏️ Editar</a>
+    <form method="post" action="{{ url_for('foko.excluir', id=s.id) }}" style="display:inline"
+          onsubmit="return confirm('Excluir este serviço e todos os lançamentos?')">
+      <button class="btn btn-ghost" style="color:#b91c1c">🗑 Excluir</button>
+    </form>
+  </div>
+</div>
+
+<div class="cards-grid">
+  <div class="card"><div class="card-icon">💼</div><div class="card-info">
+    <div class="card-value">R$ {{ "%.2f"|format(s.valor_total or 0) }}</div><div class="card-label">Valor do serviço</div></div></div>
+  <div class="card card-emerald"><div class="card-icon">✅</div><div class="card-info">
+    <div class="card-value">R$ {{ "%.2f"|format(r.recebido) }}</div><div class="card-label">Recebido</div></div></div>
+  <div class="card card-orange"><div class="card-icon">⏳</div><div class="card-info">
+    <div class="card-value">R$ {{ "%.2f"|format(r.a_receber) }}</div><div class="card-label">A receber</div></div></div>
+  <div class="card card-red"><div class="card-icon">🧾</div><div class="card-info">
+    <div class="card-value">R$ {{ "%.2f"|format(r.custos) }}</div><div class="card-label">Custas pagas</div></div></div>
+</div>
+
+<div class="three-col">
+  <div class="col-span-2">
+    <div class="panel">
+      <div class="panel-header"><h2>💰 Divisão do lucro</h2></div>
+      <table class="table">
+        <thead><tr><th></th><th>Realizado</th><th>Previsto (valor total − custas)</th></tr></thead>
+        <tbody>
+          <tr><td>Lucro (recebido − custas)</td><td><strong>R$ {{ "%.2f"|format(r.lucro) }}</strong></td><td>R$ {{ "%.2f"|format(r.lucro_prev) }}</td></tr>
+          <tr><td>Parte JF Florestal ({{ "%.0f"|format(r.pct_jf) }}%)</td><td><strong>R$ {{ "%.2f"|format(r.parte_jf) }}</strong></td><td>R$ {{ "%.2f"|format(r.parte_jf_prev) }}</td></tr>
+          <tr><td>Parte Foko ({{ "%.0f"|format(r.pct_foko) }}%)</td><td><strong>R$ {{ "%.2f"|format(r.parte_foko) }}</strong></td><td>R$ {{ "%.2f"|format(r.parte_foko_prev) }}</td></tr>
+          <tr><td>Já repassado à Foko</td><td>R$ {{ "%.2f"|format(r.repassado) }}</td><td></td></tr>
+          <tr style="background:#fef9c3"><td><strong>A repassar à Foko agora</strong></td><td><strong>R$ {{ "%.2f"|format(r.a_repassar) }}</strong></td><td></td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:.8rem;color:#888;margin-top:.6rem">
+        Os recebimentos entram na conta da JF. Custas pagas pela Foko são ressarcidas a ela antes da divisão do lucro.
+      </p>
+    </div>
+
+    <div class="panel mt">
+      <div class="panel-header"><h2>📒 Lançamentos</h2></div>
+      {% if movs %}
+      <table class="table">
+        <thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th></th></tr></thead>
+        <tbody>
+        {% for m in movs %}
+        <tr>
+          <td>{{ m.data }}</td>
+          <td>
+            {% if m.tipo == 'recebimento' %}<span class="badge-pago">Recebimento</span>
+            {% elif m.tipo == 'custo' %}<span class="badge-atrasado">Custa ({{ m.pago_por }})</span>
+            {% else %}<span class="badge-pendente">Repasse Foko</span>{% endif %}
+          </td>
+          <td>{{ m.descricao }}</td>
+          <td><strong>R$ {{ "%.2f"|format(m.valor) }}</strong></td>
+          <td>
+            <form method="post" action="{{ url_for('foko.movimento_excluir', mid=m.id) }}" style="display:inline"
+                  onsubmit="return confirm('Excluir este lançamento?')">
+              <button class="btn btn-danger btn-xs">✕</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state"><p>Nenhum lançamento ainda.</p></div>
+      {% endif %}
+      <form method="post" action="{{ url_for('foko.movimento_novo', id=s.id) }}" class="add-pag-form">
+        <select name="tipo" class="input input-sm" id="tipo-mov" onchange="document.getElementById('pago-por').style.display = this.value=='custo' ? '' : 'none'">
+          {% for k, v in tipos_mov.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
+        </select>
+        <input type="text" name="descricao" placeholder="Descrição (ex: ART, cartório...)" class="input input-sm">
+        <input type="number" name="valor" placeholder="Valor R$" step="0.01" min="0" class="input input-sm" required>
+        <input type="date" name="data" value="{{ hoje }}" class="input input-sm">
+        <select name="pago_por" id="pago-por" class="input input-sm" style="display:none">
+          <option value="JF">Paga pela JF</option><option value="Foko">Paga pela Foko</option>
+        </select>
+        <button class="btn btn-primary btn-sm">+ Lançar</button>
+      </form>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <div class="panel-header"><h2>📎 Documentos</h2></div>
+      {% for d in docs %}
+      <div class="pagamento-item">
+        <div class="pag-info">
+          <span class="pag-desc">📄 {{ d.nome_original }} <small style="color:#888">({{ d.categoria }})</small></span>
+        </div>
+        <div class="pag-meta">
+          <span style="color:#888;font-size:.8rem">{{ d.data_upload }}</span>
+          <a href="{{ url_for('foko.documento_abrir', did=d.id) }}" target="_blank" class="btn btn-ghost btn-xs">Abrir</a>
+          <a href="{{ url_for('foko.documento_abrir', did=d.id, baixar=1) }}" class="btn btn-ghost btn-xs">Baixar</a>
+          <form method="post" action="{{ url_for('foko.documento_excluir', did=d.id) }}" style="display:inline"
+                onsubmit="return confirm('Remover este documento?')">
+            <button class="btn btn-danger btn-xs">✕</button>
+          </form>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-state"><p>Nenhum documento anexado.</p></div>
+      {% endfor %}
+      <form method="post" action="{{ url_for('foko.documento_upload', id=s.id) }}" enctype="multipart/form-data" class="add-pag-form">
+        <input type="file" name="arquivo" class="input input-sm" required>
+        <select name="categoria" class="input input-sm">
+          <option>Contrato</option><option>Proposta</option><option>Planta/Memorial</option><option>ART</option><option>Comprovante</option><option>Outros</option>
+        </select>
+        <button class="btn btn-primary btn-sm">Anexar</button>
+      </form>
+    </div>
+
+    {% if s.observacoes %}
+    <div class="panel mt">
+      <div class="panel-header"><h2>📝 Observações</h2></div>
+      <div class="info-desc">{{ s.observacoes }}</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

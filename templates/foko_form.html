@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{{ titulo }}</h1>
+  <a href="{{ url_for('foko.detalhe', id=s.id) if s else url_for('foko.index') }}" class="btn btn-ghost">← Voltar</a>
+</div>
+
+<div class="panel form-panel">
+  <form method="post">
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Serviço *</label>
+        <input type="text" name="titulo" value="{{ s.titulo if s else '' }}" required class="input"
+               placeholder="Ex: Estremação Mat. 2.981 — Georreferenciamento">
+      </div>
+      <div class="form-group">
+        <label>Cliente</label>
+        <input type="text" name="cliente_nome" value="{{ s.cliente_nome if s else '' }}" class="input">
+      </div>
+      <div class="form-group">
+        <label>Projeto vinculado (opcional)</label>
+        <select name="projeto_id" class="input">
+          <option value="">— Nenhum —</option>
+          {% for p in projetos %}
+          <option value="{{ p.id }}" {% if s and s.projeto_id == p.id %}selected{% endif %}>{{ p.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Valor total cobrado do cliente (R$)</label>
+        <input type="number" step="0.01" min="0" name="valor_total" value="{{ s.valor_total if s else '' }}" class="input">
+      </div>
+      <div class="form-group">
+        <label>Parte da Foko no lucro (%)</label>
+        <input type="number" step="0.01" min="0" max="100" name="percentual_foko"
+               value="{{ s.percentual_foko if s and s.percentual_foko is not none else 50 }}" class="input">
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select name="status" class="input">
+          {% for st in status_foko %}
+          <option {% if s and s.status == st %}selected{% endif %}>{{ st }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Data do contrato</label>
+        <input type="date" name="data_contrato" value="{{ s.data_contrato if s else '' }}" class="input">
+      </div>
+      <div class="form-group full">
+        <label>Observações</label>
+        <textarea name="observacoes" class="input textarea" rows="3">{{ s.observacoes if s else '' }}</textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">💾 Salvar</button>
+      <a href="{{ url_for('foko.index') }}" class="btn btn-ghost">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

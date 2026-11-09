@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Foko — Serviços em parceria{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>🤝 Foko — Serviços em parceria</h1>
+    <div class="sub-header"><span class="tag">Divisão do lucro após custas</span></div>
+  </div>
+  <a href="{{ url_for('foko.novo') }}" class="btn btn-primary">+ Novo serviço</a>
+</div>
+
+<div class="cards-grid">
+  <div class="card card-emerald"><div class="card-icon">✅</div><div class="card-info">
+    <div class="card-value">R$ {{ "%.2f"|format(tot.recebido) }}</div><div class="card-label">Recebido dos clientes</div></div></div>
+  <div class="card card-orange"><div class="card-icon">⏳</div><div class="card-info">
+    <div class="card-value">R$ {{ "%.2f"|format(tot.a_receber) }}</div><div class="card-label">A receber</div></div></div>
+  <div class="card card-red"><div class="card-icon">🧾</div><div class="card-info">
+    <div class="card-value">R$ {{ "%.2f"|format(tot.custos) }}</div><div class="card-label">Custas pagas</div></div></div>
+  <div class="card card-emerald"><div class="card-icon">📈</div><div class="card-info">
+    <div class="card-value">R$ {{ "%.2f"|format(tot.lucro) }}</div><div class="card-label">Lucro realizado</div></div></div>
+  <div class="card card-emerald"><div class="card-icon">🏢</div><div class="card-info">
+    <div class="card-value">R$ {{ "%.2f"|format(tot.parte_jf) }}</div><div class="card-label">Parte JF Florestal</div></div></div>
+  <div class="card card-orange"><div class="card-icon">🤝</div><div class="card-info">
+    <div class="card-value">R$ {{ "%.2f"|format(tot.a_repassar) }}</div><div class="card-label">A repassar à Foko</div></div></div>
+</div>
+
+<div class="panel mt">
+  <div class="panel-header"><h2>Serviços</h2></div>
+  {% if linhas %}
+  <table class="table">
+    <thead>
+      <tr><th>Serviço</th><th>Cliente</th><th>Status</th><th>Valor</th><th>Recebido</th><th>Custas</th><th>Lucro</th><th>JF</th><th>Foko</th><th>A repassar</th></tr>
+    </thead>
+    <tbody>
+    {% for s, r in linhas %}
+    <tr>
+      <td><a href="{{ url_for('foko.detalhe', id=s.id) }}"><strong>{{ s.titulo }}</strong></a></td>
+      <td>{{ s.cliente_nome or '—' }}</td>
+      <td><span class="tag">{{ s.status }}</span></td>
+      <td>R$ {{ "%.2f"|format(s.valor_total or 0) }}</td>
+      <td>R$ {{ "%.2f"|format(r.recebido) }}</td>
+      <td>R$ {{ "%.2f"|format(r.custos) }}</td>
+      <td>R$ {{ "%.2f"|format(r.lucro) }}</td>
+      <td>R$ {{ "%.2f"|format(r.parte_jf) }} <small>({{ "%.0f"|format(r.pct_jf) }}%)</small></td>
+      <td>R$ {{ "%.2f"|format(r.parte_foko) }} <small>({{ "%.0f"|format(r.pct_foko) }}%)</small></td>
+      <td><strong>R$ {{ "%.2f"|format(r.a_repassar) }}</strong></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state"><p>Nenhum serviço cadastrado ainda.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -10,6 +10,9 @@ import storage as doc_storage
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'vvj-sistema-2026-dev')
 
+from foko import foko_bp
+app.register_blueprint(foko_bp)
+
 # ── DECORADORES DE ACESSO ─────────────────────────────────────────────────────
 
 def login_required(f):

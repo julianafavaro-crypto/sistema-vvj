@@ -39,6 +39,12 @@
     </a></li>
     {% endif %}
 
+    {% if eh_proprietario %}
+    <li><a href="{{ url_for('foko.index') }}" class="{% if request.endpoint and request.endpoint.startswith('foko.') %}active{% endif %}">
+      <span class="nav-icon">🤝</span> Foko
+    </a></li>
+    {% endif %}
+
     <li><a href="{{ url_for('fornecedores') }}" class="{% if 'fornecedor' in request.endpoint %}active{% endif %}">
       <span class="nav-icon">🏢</span> Fornecedores
     </a></li>
